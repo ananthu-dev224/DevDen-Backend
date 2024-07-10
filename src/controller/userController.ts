@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { createToken } from "../utils/jwt";
 import { sendOtpMail, sendResetMail } from "../utils/mail";
+import generateUniqueUsername from "../utils/generateUsername";
+import { OAuth2Client } from "google-auth-library";
 
 import { UserRepository } from "../repository/userRepository";
 
@@ -11,6 +13,8 @@ let resetTokens: any = {};
 let otpSend: string;
 let otpTime: number;
 const userRepo = new UserRepository();
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(clientId);
 // User signup : /user/signup
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -145,6 +149,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Email is not registered.", status: "error" });
     }
+
+    if(user.googleId){
+      return res
+        .status(400)
+        .json({ message: "Email is google registered, please sign in using google", status: "error" });
+    }
     const resetToken = crypto.randomBytes(20).toString("hex");
     resetTokens[email] = {
       token: resetToken,
@@ -204,7 +214,10 @@ export const resetPassword = async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const updatedUser = await userRepo.findOneAndUpdate({email:email}, {password:hashedPassword});
+    const updatedUser = await userRepo.findOneAndUpdate(
+      { email: email },
+      { password: hashedPassword }
+    );
     delete resetTokens[email];
     res
       .status(200)
@@ -214,3 +227,58 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
+
+// User google signin : /user/oauth
+export const googleAuth = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const name = payload?.name || "";
+    const googleId = payload?.sub;
+
+    if (!email || !googleId) {
+      return res
+        .status(400)
+        .json({ message: "Invalid token payload", status: "error" });
+    }
+    const user = await userRepo.findByEmail(email);
+    if (user) {
+      if (!user.googleId) { // if already sign up using normal method
+        return res
+          .status(400)
+          .json({
+            message: "This email is already registered with normal signup.",
+          });
+      } else {  // else user already sign up with oauth
+        const token = createToken(user._id, "user");
+        return res
+        .status(200)
+        .json({ message: "Login Success", status: "success", token, user });
+      }
+    } else {  // new fresh sign up
+      const baseUsername = email.split('@')[0];
+      const username = await generateUniqueUsername(baseUsername)
+      const userData = {
+        email,
+        name,
+        username,
+        googleId
+      };
+      const newUser = await userRepo.addUser(userData);
+      const token = createToken(newUser._id, "user");
+      return res
+        .status(200)
+        .json({ message: "Login Success", status: "success", token, user:newUser });
+    }
+  } catch (error: any) {
+    console.log("Error at googleAuth", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
+
+

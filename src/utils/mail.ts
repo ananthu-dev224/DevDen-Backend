@@ -46,6 +46,7 @@ export const sendOtpMail = async (
   const info = await Transporter.sendMail(content);
 };
 
+
 export const sendResetMail = async (
   req: Request,
   email: String,
@@ -89,5 +90,5 @@ export const sendResetMail = async (
   };
 
   const info = await Transporter.sendMail(content);
-  console.log(info);
 };
+

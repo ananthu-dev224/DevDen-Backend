@@ -26,4 +26,14 @@ export const adminLogin = async (req: Request, res: Response) => {
     }
   };
   
+// Admin user management : /admin/users
+export const userManage =  async (req: Request, res: Response) => {
+  try {
+    const users = await adminRepo.allUsers()
+    res.status(200).json({status:'success',users})
+  } catch (error: any) {
+    console.log("Error at userManage", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
 

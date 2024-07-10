@@ -3,17 +3,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.validateResetToken = exports.forgotPassword = exports.userLogin = exports.resendOtp = exports.verifyOtp = exports.signup = void 0;
+exports.googleAuth = exports.resetPassword = exports.validateResetToken = exports.forgotPassword = exports.userLogin = exports.resendOtp = exports.verifyOtp = exports.signup = void 0;
 const otp_generator_1 = __importDefault(require("otp-generator"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const crypto_1 = __importDefault(require("crypto"));
 const jwt_1 = require("../utils/jwt");
 const mail_1 = require("../utils/mail");
+const generateUsername_1 = __importDefault(require("../utils/generateUsername"));
+const google_auth_library_1 = require("google-auth-library");
 const userRepository_1 = require("../repository/userRepository");
 let resetTokens = {};
 let otpSend;
 let otpTime;
 const userRepo = new userRepository_1.UserRepository();
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const client = new google_auth_library_1.OAuth2Client(clientId);
 // User signup : /user/signup
 const signup = async (req, res) => {
     try {
@@ -152,6 +156,11 @@ const forgotPassword = async (req, res) => {
                 .status(400)
                 .json({ message: "Email is not registered.", status: "error" });
         }
+        if (user.googleId) {
+            return res
+                .status(400)
+                .json({ message: "Email is google registered, please sign in using google", status: "error" });
+        }
         const resetToken = crypto_1.default.randomBytes(20).toString("hex");
         resetTokens[email] = {
             token: resetToken,
@@ -215,3 +224,58 @@ const resetPassword = async (req, res) => {
     }
 };
 exports.resetPassword = resetPassword;
+// User google signin : /user/oauth
+const googleAuth = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload?.email;
+        const name = payload?.name || "";
+        const googleId = payload?.sub;
+        if (!email || !googleId) {
+            return res
+                .status(400)
+                .json({ message: "Invalid token payload", status: "error" });
+        }
+        const user = await userRepo.findByEmail(email);
+        if (user) {
+            if (!user.googleId) { // if already sign up using normal method
+                return res
+                    .status(400)
+                    .json({
+                    message: "This email is already registered with normal signup.",
+                });
+            }
+            else { // else user already sign up with oauth
+                const token = (0, jwt_1.createToken)(user._id, "user");
+                return res
+                    .status(200)
+                    .json({ message: "Login Success", status: "success", token, user });
+            }
+        }
+        else { // new fresh sign up
+            const baseUsername = email.split('@')[0];
+            const username = await (0, generateUsername_1.default)(baseUsername);
+            const userData = {
+                email,
+                name,
+                username,
+                googleId
+            };
+            const newUser = await userRepo.addUser(userData);
+            const token = (0, jwt_1.createToken)(newUser._id, "user");
+            return res
+                .status(200)
+                .json({ message: "Login Success", status: "success", token, user: newUser });
+        }
+    }
+    catch (error) {
+        console.log("Error at googleAuth", error.message);
+        res.status(500).json({ message: error.message, status: "error" });
+    }
+};
+exports.googleAuth = googleAuth;

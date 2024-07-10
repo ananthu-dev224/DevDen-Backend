@@ -58,10 +58,13 @@ const userSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
+    googleId: {
+        type: String
+    },
     createdAt: {
         type: String,
         default: Date.now()
-    }
+    },
 });
-const userModal = mongoose_1.default.model('user', userSchema);
-exports.default = userModal;
+const userModel = mongoose_1.default.model('user', userSchema);
+exports.default = userModel;

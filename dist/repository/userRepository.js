@@ -12,6 +12,8 @@ class UserRepository {
                 username: userData.username,
                 email: userData.email,
                 password: userData.password,
+                name: userData.name,
+                googleId: userData.googleId,
                 createdAt: Date.now(),
             });
             const data = await newUser.save();

@@ -2,7 +2,9 @@
 export interface userData {
     username:String,
     email:String,
-    password:String,
+    password?:String,
+    name?:String,
+    googleId?:String
 }
 
 export interface userPayload {

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.adminLogin = void 0;
+exports.userManage = exports.adminLogin = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwt_1 = require("../utils/jwt");
 const adminRepository_1 = require("../repository/adminRepository");
@@ -30,3 +30,15 @@ const adminLogin = async (req, res) => {
     }
 };
 exports.adminLogin = adminLogin;
+// Admin user management : /admin/users
+const userManage = async (req, res) => {
+    try {
+        const users = await adminRepo.allUsers();
+        res.status(200).json({ status: 'success', users });
+    }
+    catch (error) {
+        console.log("Error at userManage", error.message);
+        res.status(500).json({ message: error.message, status: "error" });
+    }
+};
+exports.userManage = userManage;

@@ -13,4 +13,5 @@ router.post('/login', userController_1.userLogin);
 router.post('/forgot-password', userController_1.forgotPassword);
 router.get('/validate-reset-token/:token', userController_1.validateResetToken);
 router.post('/reset-password', userController_1.resetPassword);
+router.post('/oauth', userController_1.googleAuth);
 exports.default = router;

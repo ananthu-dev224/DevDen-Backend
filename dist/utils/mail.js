@@ -79,6 +79,5 @@ const sendResetMail = async (req, email, resetToken) => {
         html: html,
     };
     const info = await Transporter.sendMail(content);
-    console.log(info);
 };
 exports.sendResetMail = sendResetMail;
