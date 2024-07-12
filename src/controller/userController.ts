@@ -122,6 +122,12 @@ export const userLogin = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "User doesnt exist, Please Signup", status: "error" });
     }
+
+    if(!user.isActive){
+      return res
+      .status(400)
+      .json({ message: "Your access has been restricted by the admin.", status: "error" });
+    }
     const dbpassword = user.password as string;
     const comparePass = await bcrypt.compare(password, dbpassword);
     if (!comparePass) {
