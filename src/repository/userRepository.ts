@@ -60,4 +60,24 @@ export class UserRepository {
       throw new Error(`DB error at User findById : ${error.message}`);
     }
   }
+
+  async allUsers() {
+    try {
+      const users = await userModel.aggregate([
+        {
+          $project: {
+            username: 1,
+            email: 1,
+            isActive: 1,
+            createdAt: 1,
+          }
+        }
+      ]);
+  
+      return users;
+    } catch (error: any) {
+      console.log("DB error at User allUsers", error.message);
+      throw new Error(`DB error at User allUsers : ${error.message}`);
+    }
+  }
 }

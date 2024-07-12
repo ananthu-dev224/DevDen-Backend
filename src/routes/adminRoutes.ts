@@ -1,12 +1,12 @@
 import express from "express";
-import { adminLogin , userManage } from "../controller/adminController";
+import { adminLogin , userManage, toggleUser } from "../controller/adminController";
 import {verifyToken , authorizeRole} from "../middleware/adminAuth"
 
 const router = express.Router()
 
 router.post('/login',adminLogin)
-router.get('/user-management',verifyToken,authorizeRole('admin'),userManage)
-
+router.get('/user-management',userManage)
+router.get('/user-management/:id',toggleUser)
 
 
 
