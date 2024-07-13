@@ -5,8 +5,13 @@ import {verifyToken , authorizeRole} from "../middleware/adminAuth"
 const router = express.Router()
 
 router.post('/login',adminLogin)
-router.get('/user-management',userManage)
-router.get('/user-management/:id',toggleUser)
+router.get('/user-management',verifyToken,authorizeRole('admin'),userManage)
+router.get('/user-management/:id',verifyToken,authorizeRole('admin'),toggleUser)
+
+
+
+
+
 
 
 

@@ -11,6 +11,7 @@ export const verifyToken = async (
   next: NextFunction
 ) => {
   console.log("verify token middleware user auth...");
+
   const auth_header = req.headers["authorization"];
   if (!auth_header) {
     return res
@@ -53,6 +54,8 @@ export const verifyToken = async (
     }
   );
 };
+
+
 
 // Checking role user
 export const authorizeRole =

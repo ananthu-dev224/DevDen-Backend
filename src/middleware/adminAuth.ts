@@ -8,6 +8,7 @@ export const verifyToken = async (
     next: NextFunction
   ) => {
     console.log("verify token middleware admin auth...");
+
     const auth_header = req.headers["authorization"];
     if (!auth_header) {
       return res
@@ -35,7 +36,12 @@ export const verifyToken = async (
             .status(400)
             .json({ message: "Invalid Token Structure", status: "error" });
         }
-        req.admin = decoded
+
+        
+        req.admin = {
+          adminId: decoded.userId,
+          role: decoded.role,
+        };
         next();
       }
     );
@@ -45,6 +51,7 @@ export const verifyToken = async (
 export const authorizeRole =
   (requiredRole: string) =>
   (req: Request, res: Response, next: NextFunction) => {
+    console.log("verifying admin role...")
     if (!req.admin || !req.admin.role || !req.admin.role.includes(requiredRole)) {
       return res
         .status(400)
