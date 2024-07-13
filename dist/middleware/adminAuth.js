@@ -49,13 +49,17 @@ const verifyToken = async (req, res, next) => {
                 .status(400)
                 .json({ message: "Invalid Token Structure", status: "error" });
         }
-        req.admin = decoded;
+        req.admin = {
+            adminId: decoded.userId,
+            role: decoded.role,
+        };
         next();
     });
 };
 exports.verifyToken = verifyToken;
 // Checking role admin
 const authorizeRole = (requiredRole) => (req, res, next) => {
+    console.log("verifying admin role...");
     if (!req.admin || !req.admin.role || !req.admin.role.includes(requiredRole)) {
         return res
             .status(400)

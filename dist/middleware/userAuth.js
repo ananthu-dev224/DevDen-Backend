@@ -59,7 +59,7 @@ const verifyToken = async (req, res, next) => {
         if (!userData?.isActive) {
             return res
                 .status(400)
-                .json({ message: "User is Blocked", status: "error" });
+                .json({ message: "Your access has been restricted by the admin.", status: "error" });
         }
         next();
     });

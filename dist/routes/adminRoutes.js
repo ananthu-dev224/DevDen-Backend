@@ -9,4 +9,5 @@ const adminAuth_1 = require("../middleware/adminAuth");
 const router = express_1.default.Router();
 router.post('/login', adminController_1.adminLogin);
 router.get('/user-management', adminAuth_1.verifyToken, (0, adminAuth_1.authorizeRole)('admin'), adminController_1.userManage);
+router.get('/user-management/:id', adminAuth_1.verifyToken, (0, adminAuth_1.authorizeRole)('admin'), adminController_1.toggleUser);
 exports.default = router;

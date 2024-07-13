@@ -128,6 +128,11 @@ const userLogin = async (req, res) => {
                 .status(400)
                 .json({ message: "User doesnt exist, Please Signup", status: "error" });
         }
+        if (!user.isActive) {
+            return res
+                .status(400)
+                .json({ message: "Your access has been restricted by the admin.", status: "error" });
+        }
         const dbpassword = user.password;
         const comparePass = await bcrypt_1.default.compare(password, dbpassword);
         if (!comparePass) {
@@ -248,6 +253,13 @@ const googleAuth = async (req, res) => {
                     .status(400)
                     .json({
                     message: "This email is already registered with normal signup.",
+                });
+            }
+            else if (!user.isActive) { // if restricted
+                return res
+                    .status(400)
+                    .json({
+                    message: "Your access has been restricted by the admin.",
                 });
             }
             else { // else user already sign up with oauth
