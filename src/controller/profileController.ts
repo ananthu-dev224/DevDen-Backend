@@ -42,4 +42,3 @@ export const editProfile = async (req: Request, res: Response) => {
   }
 };
 
-
