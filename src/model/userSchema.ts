@@ -16,7 +16,10 @@ const userSchema = new Schema({
     name:{
         type:String
     },
-    image:{
+    dp:{
+        type:String
+    },
+    banner:{
         type:String
     },
     about:{

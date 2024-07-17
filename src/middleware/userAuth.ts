@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
-
 import { UserRepository } from "../repository/userRepository";
 
 const userRepo = new UserRepository();
@@ -26,12 +25,16 @@ export const verifyToken = async (
     async (err: JsonWebTokenError | null, decoded: any) => {
       if (err) {
         console.log(err);
-        err instanceof TokenExpiredError
-          ? res.status(400).json({ message: "Token expired", status: "error" })
-          : res.status(400).json({
-              message: "Failed to authenticate token",
-              status: "error",
-            });
+        if (err instanceof TokenExpiredError) {
+          return res
+            .status(400)
+            .json({ message: "Token expired", status: "error" });
+        } else {
+          return res.status(400).json({
+            message: "Failed to authenticate token",
+            status: "error",
+          });
+        }
       }
 
       if (!decoded || !decoded.role) {
@@ -48,13 +51,15 @@ export const verifyToken = async (
       if (!userData?.isActive) {
         return res
           .status(400)
-          .json({ message: "Your access has been restricted by the admin.", status: "error" });
+          .json({
+            message: "Your access has been restricted by the admin.",
+            status: "error",
+          });
       }
       next();
     }
   );
 };
-
 
 
 // Checking role user
@@ -67,4 +72,4 @@ export const authorizeRole =
         .json({ message: "Access Denied", status: "error" });
     }
     next();
-};
+  };
