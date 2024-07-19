@@ -53,4 +53,14 @@ export class EventRepository {
       throw new Error(`DB error at User allEvents : ${error.message}`);
     }
   }
+
+  async createdEvents(userId:any) {
+    try {
+      const events = await eventModel.find({ hostId: userId }).populate('hostId');
+      return events;
+    } catch (error: any) {
+      console.log("DB error at Event allEvents", error.message);
+      throw new Error(`DB error at User allEvents : ${error.message}`);
+    }
+  }
 }

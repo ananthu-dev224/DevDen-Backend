@@ -55,7 +55,7 @@ export const addEvent = async (req: Request, res: Response) => {
   }
 };
 
-// Add new event : /user/events
+// Get all events : /user/events
 export const getEvents = async (req: Request, res: Response) => {
   try {
     const events = await eventRepo.allEvents();
@@ -70,6 +70,26 @@ export const getEvents = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.log("Error at getEvents", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
+
+// Get specific user created events : /user/event/:userId
+export const getCreatedEvents = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const events = await eventRepo.createdEvents(userId);
+
+    const sortedEvents = events.sort((a, b) => {
+      return Number(b.createdAt) - Number(a.createdAt);
+    });
+
+    res.status(200).json({
+      status: "success",
+      events: sortedEvents,
+    });
+  } catch (error: any) {
+    console.log("Error at getCreatedEvents", error.message);
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
