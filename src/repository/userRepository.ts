@@ -56,8 +56,8 @@ export class UserRepository {
       const updatedUser = await userModel.findOneAndUpdate(query,update,{new:true});
       return updatedUser;
     } catch (error: any) {
-      console.log("DB error at User findById", error.message);
-      throw new Error(`DB error at User findById : ${error.message}`);
+      console.log("DB error at User findOneAndUpdate", error.message);
+      throw new Error(`DB error at User findOneAndUpdate : ${error.message}`);
     }
   }
 

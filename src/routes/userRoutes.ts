@@ -2,6 +2,7 @@ import express from "express";
 import { userLogin, signup, verifyOtp, resendOtp, forgotPassword, validateResetToken, resetPassword, googleAuth } from "../controller/userController";
 import { editProfile } from "../controller/profileController";
 import { generateSignature, updateBanner, updateDp} from "../controller/cloudinaryController";
+import { addEvent , getEvents} from "../controller/eventController";
 import {verifyToken , authorizeRole} from "../middleware/userAuth"
 
 const router = express.Router()
@@ -18,8 +19,8 @@ router.post('/edit-profile',verifyToken,authorizeRole('user'),editProfile)
 router.get('/cloud-signature',verifyToken,authorizeRole('user'),generateSignature)
 router.post('/edit-dp',verifyToken,authorizeRole('user'),updateDp)
 router.post('/edit-banner',verifyToken,authorizeRole('user'),updateBanner)
-
-
+router.post('/create-event',verifyToken,authorizeRole('user'),addEvent)
+router.get('/events',verifyToken,authorizeRole('user'),getEvents)
 
 
 export default router;

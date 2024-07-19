@@ -3,7 +3,7 @@ import { UserRepository } from "../repository/userRepository";
 
 const userRepo = new UserRepository();
 
-// Edit profile : user/edit-profile
+// Edit profile : /user/edit-profile
 export const editProfile = async (req: Request, res: Response) => {
   try {
     const { _id, username, name, contact, place, about, website } = req.body;
