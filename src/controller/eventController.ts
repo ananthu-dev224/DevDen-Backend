@@ -228,9 +228,8 @@ export const likeEvent =  async (req: Request, res: Response) => {
     }
   
     let updatedLikes;
-
     if (event.likes.includes(userId)) {
-      updatedLikes = event.likes.filter((id: any) => id !== userId);
+      updatedLikes = event.likes.filter((id: any) => id.toString() !== userId);
     } else {
       updatedLikes = [...event.likes, userId];
     }

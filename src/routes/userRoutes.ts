@@ -23,6 +23,7 @@ import {
   editEvent,
   likeEvent
 } from "../controller/eventController";
+import { addComment, getEventComment, deleteComment, likeComment } from "../controller/commentController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
 const router = express.Router();
@@ -50,7 +51,10 @@ router.get("/event/:id", verifyToken, authorizeRole("user"), getCreatedEvents);
 router.post("/edit-event", verifyToken, authorizeRole("user"), editEvent);
 router.get("/abort-event/:id", verifyToken, authorizeRole("user"), abortEvent);
 router.post('/like-event',verifyToken,authorizeRole('user'),likeEvent)
-
+router.get('/comments/:id',verifyToken,authorizeRole('user'),getEventComment)
+router.post('/add-comment',verifyToken,authorizeRole('user'),addComment)
+router.delete('/delete-comment/:id',verifyToken,authorizeRole('user'),deleteComment)
+router.post('/like-comment',verifyToken,authorizeRole('user'),likeComment)
 
 
 export default router;

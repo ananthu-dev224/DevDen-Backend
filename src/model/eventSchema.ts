@@ -40,7 +40,7 @@ const eventSchema = new Schema({
     likes:{
         type:[{
             type:Schema.Types.ObjectId,
-            ref:'users'
+            ref:'user'
         }],
         default:[]
     },
