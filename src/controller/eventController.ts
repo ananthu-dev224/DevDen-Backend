@@ -216,3 +216,32 @@ export const approveEvent =  async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
+
+// event like : /user/like-event
+export const likeEvent =  async (req: Request, res: Response) => {
+  try {
+    const {userId, eventId} = req.body;
+    const event = await eventRepo.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({ status: 'error', message: 'Event not found' });
+    }
+  
+    let updatedLikes;
+
+    if (event.likes.includes(userId)) {
+      updatedLikes = event.likes.filter((id: any) => id !== userId);
+    } else {
+      updatedLikes = [...event.likes, userId];
+    }
+
+    await eventRepo.findOneAndUpdate(
+      { _id: eventId },
+      { likes: updatedLikes }
+    );
+    res.status(200).json({ status: 'success' });
+  } catch (error: any) {
+    console.log("Error at likeEvent", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};

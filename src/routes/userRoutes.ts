@@ -21,6 +21,7 @@ import {
   getCreatedEvents,
   abortEvent,
   editEvent,
+  likeEvent
 } from "../controller/eventController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
@@ -48,7 +49,7 @@ router.get("/events", verifyToken, authorizeRole("user"), getEvents);
 router.get("/event/:id", verifyToken, authorizeRole("user"), getCreatedEvents);
 router.post("/edit-event", verifyToken, authorizeRole("user"), editEvent);
 router.get("/abort-event/:id", verifyToken, authorizeRole("user"), abortEvent);
-
+router.post('/like-event',verifyToken,authorizeRole('user'),likeEvent)
 
 
 
