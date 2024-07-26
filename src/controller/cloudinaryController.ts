@@ -25,7 +25,8 @@ export const generateSignature = async (req: Request, res: Response) => {
 // Edit profile dp : /user/edit-dp
 export const updateDp = async (req: Request, res: Response) => {
   try {
-    const {dp,userId} = req.body;
+    const {dp} = req.body;
+    const userId = req.user?.userId;
     const data = {
         dp
     }
@@ -40,7 +41,8 @@ export const updateDp = async (req: Request, res: Response) => {
 // Edit profile banner : /user/edit-banner
 export const updateBanner = async (req: Request, res: Response) => {
   try {
-    const {banner,userId} = req.body;
+    const {banner} = req.body;
+    const userId = req.user?.userId;
     const data = {
         banner
     }

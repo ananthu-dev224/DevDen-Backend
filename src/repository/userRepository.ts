@@ -80,4 +80,27 @@ export class UserRepository {
       throw new Error(`DB error at User allUsers : ${error.message}`);
     }
   }
+
+  async searchUsers(query:string) {
+    try {
+      const users = await userModel.aggregate([
+        {
+          $match: {
+              $or: [
+                  { username: { $regex: `^${query}`, $options: 'i' } },
+                  { name: { $regex: `^${query}`, $options: 'i' } }
+              ]
+          }
+      },
+      {
+          $limit: 10  
+      }
+      ]);
+  
+      return users;
+    } catch (error: any) {
+      console.log("DB error at User searchUsers", error.message);
+      throw new Error(`DB error at User searchUsers : ${error.message}`);
+    }
+  }
 }

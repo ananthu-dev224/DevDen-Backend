@@ -66,6 +66,16 @@ export class EventRepository {
     }
   }
 
+  async userEvents(userId:any) {
+    try {
+      const events = await eventModel.find({ hostId: userId,isActive:true,isApproved:true }).populate('hostId');
+      return events;
+    } catch (error: any) {
+      console.log("DB error at Event createdEvents", error.message);
+      throw new Error(`DB error at User createdEvents : ${error.message}`);
+    }
+  }
+
   async adminEvents() {
     try {
       const events = await eventModel.find({isApproved:false }).populate('hostId');

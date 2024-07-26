@@ -1,5 +1,6 @@
 import { CommentRepository } from "../repository/commentRepository";
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 
 
 const commentRepo = new CommentRepository();
@@ -9,13 +10,19 @@ export const addComment = async (req: Request, res: Response) => {
     try {
       const {
         eventId,
-        userId,
         text
       } = req.body;
+
+      const userId = req.user?.userId;
+      const userIdObjectId = new mongoose.Types.ObjectId(userId)
+  
+      if(!userId){
+        return res.status(404).json({ status: 'error', message: 'Please login.' });
+      }
       
       const data = {
         eventId,
-        userId,
+        userId:userIdObjectId,
         text
       }
 
@@ -37,11 +44,7 @@ export const addComment = async (req: Request, res: Response) => {
 export const getEventComment = async (req: Request, res: Response) => {
     try {
       const eventId = req.params.id;
-      
       const comments = await commentRepo.findByEvent(eventId)
-
-
-  
       res.status(200).json({
         status: "success",
         comments
@@ -70,8 +73,14 @@ export const deleteComment = async (req: Request, res: Response) => {
 // comment like : /user/like-comment
 export const likeComment =  async (req: Request, res: Response) => {
     try {
-      const {userId, commentId} = req.body;
+      const {commentId} = req.body;
       const comment = await commentRepo.findById(commentId);
+      const userId = req.user?.userId;
+      const userIdObjectId = new mongoose.Types.ObjectId(userId)
+  
+      if(!userId){
+        return res.status(404).json({ status: 'error', message: 'Please login.' });
+      }
   
       if (!comment) {
         return res.status(404).json({ status: 'error', message: 'Event not found' });
@@ -79,10 +88,10 @@ export const likeComment =  async (req: Request, res: Response) => {
     
       let updatedLikes;
   
-      if (comment.likes.includes(userId)) {
-        updatedLikes = comment.likes.filter((id: any) => id.toString() !== userId);
+      if (comment.likes.includes(userIdObjectId)) {
+        updatedLikes = comment.likes.filter((id: any) => {id !== userIdObjectId});
       } else {
-        updatedLikes = [...comment.likes, userId];
+        updatedLikes = [...comment.likes, userIdObjectId];
       }
   
       const result = await commentRepo.findOneAndUpdate(

@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose"
+import mongoose,{ ObjectId } from "mongoose"
 
 export interface userData {
     username:String,
@@ -9,7 +9,7 @@ export interface userData {
 }
 
 export interface eventData {
-    hostId:ObjectId,
+    hostId:mongoose.Types.ObjectId,
     image:String,
     description:String,
     date:String,
@@ -21,7 +21,7 @@ export interface eventData {
 }
 
 export interface userPayload {
-    userId:String,
+    userId:string,
     role:String
 }
 

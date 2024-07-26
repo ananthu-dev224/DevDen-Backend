@@ -6,8 +6,8 @@ const userRepo = new UserRepository();
 // Edit profile : /user/edit-profile
 export const editProfile = async (req: Request, res: Response) => {
   try {
-    const { _id, username, name, contact, place, about, website } = req.body;
-
+    const {username, name, contact, place, about, website } = req.body;
+    const _id = req.user?.userId;
     
     if (username !== '') {
         const existingUser = await userRepo.findByUsername(username);

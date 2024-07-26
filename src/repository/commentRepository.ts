@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 
 
 export class CommentRepository {
-  async addComment(commentData: {eventId:ObjectId,userId:ObjectId,text:string}) {
+  async addComment(commentData: {eventId:ObjectId,userId:mongoose.Types.ObjectId,text:string}) {
     try {
       const newComment = new commentModel({
         eventId:commentData.eventId,

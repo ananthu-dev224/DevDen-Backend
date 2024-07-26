@@ -1,5 +1,6 @@
 import { EventRepository } from "../repository/eventRepository";
 import { Request, Response } from "express";
+import mongoose from 'mongoose'; 
 
 const eventRepo = new EventRepository();
 
@@ -7,7 +8,6 @@ const eventRepo = new EventRepository();
 export const addEvent = async (req: Request, res: Response) => {
   try {
     const {
-      hostId,
       image,
       description,
       date,
@@ -18,6 +18,8 @@ export const addEvent = async (req: Request, res: Response) => {
       ticketPrice,
     } = req.body;
 
+    const hostId = req.user?.userId;
+    const hostObjectId = new mongoose.Types.ObjectId(hostId);
 
     const eventDateTime = new Date(`${date}T${time}`);
     const currentDateTime = new Date();
@@ -33,7 +35,7 @@ export const addEvent = async (req: Request, res: Response) => {
     const numericTicketPrice = parseFloat(ticketPrice);
 
     const eventData = {
-      hostId,
+      hostId:hostObjectId,
       image,
       description,
       date,
@@ -116,7 +118,6 @@ export const editEvent = async (req: Request, res: Response) => {
   try {
     const {
       eventId,
-      hostId,
       image,
       description,
       date,
@@ -127,6 +128,8 @@ export const editEvent = async (req: Request, res: Response) => {
       ticketPrice,
     } = req.body;
 
+    const hostId = req.user?.userId;
+    const hostObjectId = new mongoose.Types.ObjectId(hostId);
     const eventDateTime = new Date(`${date}T${time}`);
     const currentDateTime = new Date();
     const oneDayInMillis = 24 * 60 * 60 * 1000; // Number of milliseconds in one day
@@ -142,7 +145,7 @@ export const editEvent = async (req: Request, res: Response) => {
     let updateData = {}
     if(!isFree){
       updateData = {
-        hostId,
+        hostId:hostObjectId,
         image,
         description,
         date,
@@ -220,18 +223,24 @@ export const approveEvent =  async (req: Request, res: Response) => {
 // event like : /user/like-event
 export const likeEvent =  async (req: Request, res: Response) => {
   try {
-    const {userId, eventId} = req.body;
+    const {eventId} = req.body;
     const event = await eventRepo.findById(eventId);
+    const userId = req.user?.userId;
+    const userIdObjectId = new mongoose.Types.ObjectId(userId)
+
+    if(!userId){
+      return res.status(404).json({ status: 'error', message: 'Please login.' });
+    }
 
     if (!event) {
       return res.status(404).json({ status: 'error', message: 'Event not found' });
     }
   
     let updatedLikes;
-    if (event.likes.includes(userId)) {
-      updatedLikes = event.likes.filter((id: any) => id.toString() !== userId);
+    if (event.likes.includes(userIdObjectId)) {
+      updatedLikes = event.likes.filter((id: any) => { id !== userIdObjectId });
     } else {
-      updatedLikes = [...event.likes, userId];
+      updatedLikes = [...event.likes, userIdObjectId];
     }
 
     await eventRepo.findOneAndUpdate(
