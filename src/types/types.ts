@@ -1,3 +1,4 @@
+import mongoose,{ ObjectId } from "mongoose"
 
 export interface userData {
     username:String,
@@ -7,8 +8,20 @@ export interface userData {
     googleId?:String
 }
 
+export interface eventData {
+    hostId:mongoose.Types.ObjectId,
+    image:String,
+    description:String,
+    date:String,
+    time:String,
+    venue:String,
+    isFree:Boolean,
+    totalTickets?:Number,
+    ticketPrice?:Number,
+}
+
 export interface userPayload {
-    userId:String,
+    userId:string,
     role:String
 }
 

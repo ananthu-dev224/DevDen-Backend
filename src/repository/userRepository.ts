@@ -56,8 +56,8 @@ export class UserRepository {
       const updatedUser = await userModel.findOneAndUpdate(query,update,{new:true});
       return updatedUser;
     } catch (error: any) {
-      console.log("DB error at User findById", error.message);
-      throw new Error(`DB error at User findById : ${error.message}`);
+      console.log("DB error at User findOneAndUpdate", error.message);
+      throw new Error(`DB error at User findOneAndUpdate : ${error.message}`);
     }
   }
 
@@ -78,6 +78,29 @@ export class UserRepository {
     } catch (error: any) {
       console.log("DB error at User allUsers", error.message);
       throw new Error(`DB error at User allUsers : ${error.message}`);
+    }
+  }
+
+  async searchUsers(query:string) {
+    try {
+      const users = await userModel.aggregate([
+        {
+          $match: {
+              $or: [
+                  { username: { $regex: `^${query}`, $options: 'i' } },
+                  { name: { $regex: `^${query}`, $options: 'i' } }
+              ]
+          }
+      },
+      {
+          $limit: 10  
+      }
+      ]);
+  
+      return users;
+    } catch (error: any) {
+      console.log("DB error at User searchUsers", error.message);
+      throw new Error(`DB error at User searchUsers : ${error.message}`);
     }
   }
 }
