@@ -238,7 +238,7 @@ export const likeEvent =  async (req: Request, res: Response) => {
   
     let updatedLikes;
     if (event.likes.includes(userIdObjectId)) {
-      updatedLikes = event.likes.filter((id: any) => { id !== userIdObjectId });
+      updatedLikes = event.likes.filter((id: mongoose.Types.ObjectId) => !id.equals(userIdObjectId));
     } else {
       updatedLikes = [...event.likes, userIdObjectId];
     }
