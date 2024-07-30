@@ -89,7 +89,7 @@ export const likeComment =  async (req: Request, res: Response) => {
       let updatedLikes;
   
       if (comment.likes.includes(userIdObjectId)) {
-        updatedLikes = comment.likes.filter((id: any) => {id !== userIdObjectId});
+        updatedLikes = comment.likes.filter((id: mongoose.Types.ObjectId) => !id.equals(userIdObjectId));
       } else {
         updatedLikes = [...comment.likes, userIdObjectId];
       }
