@@ -52,7 +52,7 @@ export class EventRepository {
       return events;
     } catch (error: any) {
       console.log("DB error at Event allEvents", error.message);
-      throw new Error(`DB error at User allEvents : ${error.message}`);
+      throw new Error(`DB error at Event allEvents : ${error.message}`);
     }
   }
 
@@ -62,7 +62,7 @@ export class EventRepository {
       return events;
     } catch (error: any) {
       console.log("DB error at Event createdEvents", error.message);
-      throw new Error(`DB error at User createdEvents : ${error.message}`);
+      throw new Error(`DB error at Event createdEvents : ${error.message}`);
     }
   }
 
@@ -72,7 +72,7 @@ export class EventRepository {
       return events;
     } catch (error: any) {
       console.log("DB error at Event createdEvents", error.message);
-      throw new Error(`DB error at User createdEvents : ${error.message}`);
+      throw new Error(`DB error at Event createdEvents : ${error.message}`);
     }
   }
 
@@ -82,7 +82,7 @@ export class EventRepository {
       return events;
     } catch (error: any) {
       console.log("DB error at Event adminEvents", error.message);
-      throw new Error(`DB error at User adminEvents : ${error.message}`);
+      throw new Error(`DB error at Event adminEvents : ${error.message}`);
     }
   }
 }
