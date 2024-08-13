@@ -133,7 +133,7 @@ export const buyTicket = async (req: Request, res: Response) => {
 
 
       const ticketId = await generateUniqueTicketId();
-      const qrCodeData = `${process.env.FRONT_END_URL}/ticket-status?ticketId=${ticketId}`;
+      const qrCodeData = `${process.env.FRONT_END_URL}/ticket-status/${ticketId}`;
       const qrCodeUrl = await QRCode.toDataURL(qrCodeData);
 
       // Prepare ticket data and save to database
@@ -341,3 +341,25 @@ export const downloadTicketPDF = async (req: Request, res: Response) => {
     res.status(500).json({ status: "error", message: "Internal Server Error." });
   }
 }
+
+// verify ticket status : /user/verify-qr/:id
+export const verifyStatus = async (req: Request, res: Response) => {
+  try {
+    const ticketId = req.params.id;
+    if (!ticketId) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Ticket id is required." });
+    }
+    const ticket = await ticketRepo.findByTicketId(ticketId);
+
+    if(ticket?.status === 'Purchased'){
+        return res.status(200).json({ status: "success", message : "Ticket is Active." });
+    }else{
+        return res.status(400).json({ status: "error", message : "Ticket is not Active." });
+    }
+  } catch (error: any) {
+    console.log("Error at verifyStatus", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};

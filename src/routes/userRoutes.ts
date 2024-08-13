@@ -37,7 +37,7 @@ import {
   getFollowers,
   getFollowing,
 } from "../controller/networkController";
-import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF } from "../controller/ticketController";
+import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF, verifyStatus } from "../controller/ticketController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
 const router = express.Router();
@@ -91,6 +91,6 @@ router.get('/my-tickets',verifyToken, authorizeRole("user"), userTickets);
 router.get("/event-details/:id", verifyToken, authorizeRole("user"), eventDetails);
 router.post("/cancel-ticket",verifyToken, authorizeRole("user"), cancelTicket);
 router.get("/download-ticket/:id", verifyToken, authorizeRole("user"), downloadTicketPDF);
-
+router.get("/verify-qr/:id", verifyToken, authorizeRole("user"), verifyStatus);
 
 export default router;
