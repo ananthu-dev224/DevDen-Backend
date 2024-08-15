@@ -1,5 +1,6 @@
 import { EventRepository } from "../repository/eventRepository";
 import { TicketRepository } from "../repository/ticketRepository";
+import { SavedRepository } from "../repository/savedRepository";
 import { Request, Response } from "express";
 import mongoose from 'mongoose'; 
 import dotenv from "dotenv";
@@ -15,6 +16,7 @@ const stripe = new Stripe(stripeSecret);
 
 const eventRepo = new EventRepository();
 const ticketRepo = new TicketRepository();
+const savedRepo = new SavedRepository();
 
 
 // Add new event : /user/create-event
@@ -319,3 +321,66 @@ export const likeEvent =  async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
+
+// event save/unsave : POST => /user/save-event
+export const saveEvent =  async (req: Request, res: Response) => {
+  const { eventId } = req.body;
+  const userId = req.user?.userId;
+  if (!userId) {
+    return res
+      .status(404)
+      .json({ status: "error", message: "Please login." });
+  }
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+   try {
+     const existing = await savedRepo.findOne(userId,eventId);
+     if(existing){
+        await savedRepo.findByIdAndDelete(existing._id);
+        return res.status(200).json({ status: 'success', message: 'Event unsaved' });
+     }
+     const saveData = {
+      userId:userObjectId,
+      eventId
+     }
+     const saved = await savedRepo.addToSave(saveData)
+     res.status(200).json({ status: 'success', message: 'Event saved' });
+   } catch (error: any) {
+    console.log("Error at saveEvent", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+   }
+}
+
+// event check saved or not : GET => /user/save-event
+export const isSaved =  async (req: Request, res: Response) => {
+  const { eventId } = req.query;
+  const userId = req.user?.userId;
+  if (!userId) {
+    return res
+      .status(404)
+      .json({ status: "error", message: "Please login." });
+  }
+   try {
+     const saved = await savedRepo.findOne(userId,eventId);
+     res.status(200).json({ status: 'success', isSaved: !!saved });
+   } catch (error: any) {
+    console.log("Error at isSaved", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+   }
+}
+
+// user saved events :  /user/saved
+export const userSaved =  async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  if (!userId) {
+    return res
+      .status(404)
+      .json({ status: "error", message: "Please login." });
+  }
+   try {
+     const saved = await savedRepo.findByUserId(userId);
+     res.status(200).json({ status: 'success', saved });
+   } catch (error: any) {
+    console.log("Error at userSaved", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+   }
+}

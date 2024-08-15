@@ -22,6 +22,9 @@ import {
   abortEvent,
   editEvent,
   likeEvent,
+  isSaved,
+  saveEvent,
+  userSaved
 } from "../controller/eventController";
 import {
   addComment,
@@ -92,5 +95,8 @@ router.get("/event-details/:id", verifyToken, authorizeRole("user"), eventDetail
 router.post("/cancel-ticket",verifyToken, authorizeRole("user"), cancelTicket);
 router.get("/download-ticket/:id", verifyToken, authorizeRole("user"), downloadTicketPDF);
 router.get("/verify-qr/:id", verifyToken, authorizeRole("user"), verifyStatus);
+router.post("/save-event",verifyToken, authorizeRole("user"), saveEvent);
+router.get("/save-event",verifyToken, authorizeRole("user"), isSaved);
+router.get("/saved",verifyToken, authorizeRole("user"), userSaved);
 
 export default router;
