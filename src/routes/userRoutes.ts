@@ -22,6 +22,9 @@ import {
   abortEvent,
   editEvent,
   likeEvent,
+  isSaved,
+  saveEvent,
+  userSaved
 } from "../controller/eventController";
 import {
   addComment,
@@ -37,6 +40,7 @@ import {
   getFollowers,
   getFollowing,
 } from "../controller/networkController";
+import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF, verifyStatus } from "../controller/ticketController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
 const router = express.Router();
@@ -84,5 +88,15 @@ router.post("/follow", verifyToken, authorizeRole("user"), followUser);
 router.post("/unfollow", verifyToken, authorizeRole("user"), unfollowUser);
 router.get("/followers/:id", verifyToken, authorizeRole("user"), getFollowers);
 router.get("/following/:id", verifyToken, authorizeRole("user"), getFollowing);
+router.post("/checkout-session",verifyToken, authorizeRole("user"), checkoutSession);
+router.post("/ticket",verifyToken, authorizeRole("user"), buyTicket);
+router.get('/my-tickets',verifyToken, authorizeRole("user"), userTickets);
+router.get("/event-details/:id", verifyToken, authorizeRole("user"), eventDetails);
+router.post("/cancel-ticket",verifyToken, authorizeRole("user"), cancelTicket);
+router.get("/download-ticket/:id", verifyToken, authorizeRole("user"), downloadTicketPDF);
+router.get("/verify-qr/:id", verifyToken, authorizeRole("user"), verifyStatus);
+router.post("/save-event",verifyToken, authorizeRole("user"), saveEvent);
+router.get("/save-event",verifyToken, authorizeRole("user"), isSaved);
+router.get("/saved",verifyToken, authorizeRole("user"), userSaved);
 
 export default router;
