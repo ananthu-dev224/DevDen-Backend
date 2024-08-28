@@ -73,4 +73,15 @@ export class ChatRepository {
         }
       }
 
+      async findByMessageIdAndDelete(messageId: string) {
+        try {
+          const objectId = new mongoose.Types.ObjectId(messageId);
+          const message = await chat.findByIdAndDelete(objectId);
+          return message;
+        } catch (error: any) {
+          console.log("DB error at chat findByMessageIdAndDelete", error.message);
+          throw new Error(`DB error at chat findByMessageIdAndDelete: ${error.message}`);
+        }
+      }
+
 }

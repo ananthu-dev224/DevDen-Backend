@@ -90,5 +90,16 @@ export const getMessages = async (req: Request, res: Response) => {
     }
 };
 
-
-
+// delete message : Delete =>  /user/delete-message/:messageId
+export const deleteMessage = async (req: Request, res: Response) => {
+  try {
+    const messageId = req.params.id;
+    await chatRepo.findByMessageIdAndDelete(messageId)  
+    res.status(200).json({
+      status: "success",
+    });
+  } catch (error: any) {
+    console.log("Error at deleteMessage", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
