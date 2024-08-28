@@ -38,6 +38,14 @@ const userSchema = new Schema({
         type:Boolean,
         default:true
     },
+    chatStatus:{
+        type:String,
+        default: 'Offline'
+    },
+    lastSeen:{
+        type:Date,
+        default: Date.now
+    },
     googleId:{
         type:String
     },

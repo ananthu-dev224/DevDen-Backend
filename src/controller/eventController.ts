@@ -378,7 +378,10 @@ export const userSaved =  async (req: Request, res: Response) => {
   }
    try {
      const saved = await savedRepo.findByUserId(userId);
-     res.status(200).json({ status: 'success', saved });
+     const sortedEvents = saved.sort((a, b) => {
+      return Number(b.createdAt) - Number(a.createdAt);
+    });
+     res.status(200).json({ status: 'success', saved:sortedEvents });
    } catch (error: any) {
     console.log("Error at userSaved", error.message);
     res.status(500).json({ message: error.message, status: "error" });

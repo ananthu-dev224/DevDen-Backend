@@ -2,8 +2,11 @@ import  express from "express"
 import dotenv from 'dotenv'
 import session from "express-session";
 import cors from "cors";
+import { Server } from "socket.io";
+import http from "http";  
 
 import connectDb from "./config/db"
+import socketConfig from "./config/socket";
 import userRoutes from './routes/userRoutes'
 import adminRoutes from './routes/adminRoutes'
 
@@ -53,13 +56,20 @@ app.use(cors({
 
 connectDb()
 
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: { origin: "http://localhost:5173" },
+});
+
+socketConfig(io)
+
 app.use("/user",userRoutes)
 app.use("/admin",adminRoutes)
 
 
 
 
-
-app.listen(port,() => {
-    console.log(`Backend server starts at http://127.0.0.1:${port}`)
+server.listen(port,() => {
+    console.log(`Backend server starts at http://localhost:${port}`)
 })

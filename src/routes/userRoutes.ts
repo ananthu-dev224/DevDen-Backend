@@ -41,6 +41,7 @@ import {
   getFollowing,
 } from "../controller/networkController";
 import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF, verifyStatus } from "../controller/ticketController";
+import {addOrGetConversation,addMessage,getConversation,getConversationUser,getMessages} from '../controller/chatController'
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
 const router = express.Router();
@@ -98,5 +99,15 @@ router.get("/verify-qr/:id", verifyToken, authorizeRole("user"), verifyStatus);
 router.post("/save-event",verifyToken, authorizeRole("user"), saveEvent);
 router.get("/save-event",verifyToken, authorizeRole("user"), isSaved);
 router.get("/saved",verifyToken, authorizeRole("user"), userSaved);
+router.post("/conversation",verifyToken, authorizeRole("user"), addOrGetConversation);
+router.get("/conversation",verifyToken, authorizeRole("user"), getConversation); //by conversation id
+router.get("/conversation/:userId",verifyToken, authorizeRole("user"), getConversationUser); //by userId all conversations
+router.post("/message",verifyToken, authorizeRole("user"), addMessage);
+router.get("/message/:conversationId",verifyToken, authorizeRole("user"), getMessages); //all messages of a conversation
+
+
+
+
+
 
 export default router;
