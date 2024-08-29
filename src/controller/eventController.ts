@@ -1,8 +1,9 @@
 import { EventRepository } from "../repository/eventRepository";
 import { TicketRepository } from "../repository/ticketRepository";
 import { SavedRepository } from "../repository/savedRepository";
+import { UserRepository } from "../repository/userRepository";
 import { Request, Response } from "express";
-import mongoose from 'mongoose'; 
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Stripe from "stripe";
 
@@ -17,7 +18,7 @@ const stripe = new Stripe(stripeSecret);
 const eventRepo = new EventRepository();
 const ticketRepo = new TicketRepository();
 const savedRepo = new SavedRepository();
-
+const userRepo = new UserRepository();
 
 // Add new event : /user/create-event
 export const addEvent = async (req: Request, res: Response) => {
@@ -50,7 +51,7 @@ export const addEvent = async (req: Request, res: Response) => {
     const numericTicketPrice = parseFloat(ticketPrice);
 
     const eventData = {
-      hostId:hostObjectId,
+      hostId: hostObjectId,
       image,
       description,
       date,
@@ -135,45 +136,77 @@ export const abortEvent = async (req: Request, res: Response) => {
           "Cannot abort event, The event date has already passed or its today",
       });
     }
-    await eventRepo.findOneAndUpdate({_id},{isActive:false})
-    const ticketsToRefund = await ticketRepo.findByEventId(_id)
+    await eventRepo.findOneAndUpdate({ _id }, { isActive: false });
+    const ticketsToRefund = await ticketRepo.findByEventIdAbort(_id);
     if (!ticketsToRefund.length) {
-      return res.status(200).json({ status: 'success', message: 'Event aborted successfully, No tickets found for this event to refund' });
+      return res
+        .status(200)
+        .json({
+          status: "success",
+          message:
+            "Event aborted successfully, No tickets found for this event to refund",
+        });
     }
 
+    let totalDebitAmount = 0;
+
     //ticket refund related logic , Refund tickets concurrently
-    await Promise.all(ticketsToRefund.map(async (ticket) => {
-      const sessionId = ticket.stripe_sessionId;
-      if (!sessionId) {
-        throw new Error(`No Stripe session ID found for ticket ${ticket.ticketId}`);
-      }
+    await Promise.all(
+      ticketsToRefund.map(async (ticket) => {
+        const sessionId = ticket.stripe_sessionId;
+        if (!sessionId) {
+          throw new Error(
+            `No Stripe session ID found for ticket ${ticket.ticketId}`
+          );
+        }
 
-      // Retrieve the payment intent associated with the session
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      const paymentIntentId = session.payment_intent as string;
+        // Retrieve the payment intent associated with the session
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const paymentIntentId = session.payment_intent as string;
 
-      if (!paymentIntentId) {
-        throw new Error(`No payment intent found for session ${sessionId}`);
-      }
+        if (!paymentIntentId) {
+          throw new Error(`No payment intent found for session ${sessionId}`);
+        }
 
-      // Create a refund for the payment intent
-      const refund = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-      });
+        // Create a refund for the payment intent
+        const refund = await stripe.refunds.create({
+          payment_intent: paymentIntentId,
+        });
 
-      // Check if the refund was successful
-      if (refund.status !== 'succeeded') {
-        throw new Error(`Refund failed for payment intent ${paymentIntentId}`);
-      }else {
+        // Check if the refund was successful
+        if (refund.status !== "succeeded") {
+          throw new Error(
+            `Refund failed for payment intent ${paymentIntentId}`
+          );
+        } else {
+          const commissionRate = 0.05; // 5% commission
+          const ticketCost = ticket.totalCost;
+          const commissionAmount = ticketCost * commissionRate;
+          const debitAmount = ticketCost - commissionAmount;
+
+          totalDebitAmount += debitAmount;
           ticketRepo.findOneAndUpdate(
-            { ticketId : ticket.ticketId },
+            { ticketId: ticket.ticketId },
             { status: "Aborted" }
-          )
+          );
+        }
+      })
+    );
+    // Update host's payment history
+    const paymentHistoryEntry = `Debit $${-totalDebitAmount} from your wallet ${
+      event._id
+    } aborted , ticket refund on ${new Date().toLocaleDateString()}`;
+    await userRepo.findOneAndUpdate(
+      { _id: event.hostId },
+      {
+        $inc: { wallet: -totalDebitAmount },
+        $push: { paymentHistory: paymentHistoryEntry },
       }
-    }));
+    );
+
     res.status(200).json({
       status: "success",
-      message: "Event aborted and tickets refunded successfully."
+      message: "Event aborted and tickets refunded successfully.",
     });
   } catch (error: any) {
     console.log("Error at abortEvent", error.message);
@@ -210,10 +243,10 @@ export const editEvent = async (req: Request, res: Response) => {
     }
     const numericTotalTickets = parseInt(totalTickets, 10);
     const numericTicketPrice = parseFloat(ticketPrice);
-    let updateData = {}
-    if(!isFree){
+    let updateData = {};
+    if (!isFree) {
       updateData = {
-        hostId:hostObjectId,
+        hostId: hostObjectId,
         image,
         description,
         date,
@@ -223,7 +256,7 @@ export const editEvent = async (req: Request, res: Response) => {
         totalTickets: numericTotalTickets,
         ticketPrice: numericTicketPrice,
       };
-    }else{
+    } else {
       updateData = {
         hostId,
         image,
@@ -234,7 +267,10 @@ export const editEvent = async (req: Request, res: Response) => {
         isFree,
       };
     }
-    const newEvent = await eventRepo.findOneAndUpdate({_id:eventId},updateData);
+    const newEvent = await eventRepo.findOneAndUpdate(
+      { _id: eventId },
+      updateData
+    );
     res.status(200).json({
       message: "Event updated successfully",
       status: "success",
@@ -245,7 +281,6 @@ export const editEvent = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
-
 
 // Get not approved events : /admin/event-portal
 export const getAdminEvents = async (req: Request, res: Response) => {
@@ -266,22 +301,23 @@ export const getAdminEvents = async (req: Request, res: Response) => {
   }
 };
 
-
 // Admin event approve : /admin/approve-event/:id
-export const approveEvent =  async (req: Request, res: Response) => {
+export const approveEvent = async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const event = await eventRepo.findById(id);
 
     if (!event) {
-      return res.status(404).json({ status: 'error', message: 'Event not found' });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Event not found" });
     }
-  
+
     const updatedUser = await eventRepo.findOneAndUpdate(
       { _id: id },
       { isApproved: true }
     );
-    res.status(200).json({ status: 'success' });
+    res.status(200).json({ status: "success" });
   } catch (error: any) {
     console.log("Error at approveEvent", error.message);
     res.status(500).json({ message: error.message, status: "error" });
@@ -289,33 +325,36 @@ export const approveEvent =  async (req: Request, res: Response) => {
 };
 
 // event like : /user/like-event
-export const likeEvent =  async (req: Request, res: Response) => {
+export const likeEvent = async (req: Request, res: Response) => {
   try {
-    const {eventId} = req.body;
+    const { eventId } = req.body;
     const event = await eventRepo.findById(eventId);
     const userId = req.user?.userId;
-    const userIdObjectId = new mongoose.Types.ObjectId(userId)
+    const userIdObjectId = new mongoose.Types.ObjectId(userId);
 
-    if(!userId){
-      return res.status(404).json({ status: 'error', message: 'Please login.' });
+    if (!userId) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Please login." });
     }
 
     if (!event) {
-      return res.status(404).json({ status: 'error', message: 'Event not found' });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Event not found" });
     }
-  
+
     let updatedLikes;
     if (event.likes.includes(userIdObjectId)) {
-      updatedLikes = event.likes.filter((id: mongoose.Types.ObjectId) => !id.equals(userIdObjectId));
+      updatedLikes = event.likes.filter(
+        (id: mongoose.Types.ObjectId) => !id.equals(userIdObjectId)
+      );
     } else {
       updatedLikes = [...event.likes, userIdObjectId];
     }
 
-    await eventRepo.findOneAndUpdate(
-      { _id: eventId },
-      { likes: updatedLikes }
-    );
-    res.status(200).json({ status: 'success' });
+    await eventRepo.findOneAndUpdate({ _id: eventId }, { likes: updatedLikes });
+    res.status(200).json({ status: "success" });
   } catch (error: any) {
     console.log("Error at likeEvent", error.message);
     res.status(500).json({ message: error.message, status: "error" });
@@ -323,67 +362,63 @@ export const likeEvent =  async (req: Request, res: Response) => {
 };
 
 // event save/unsave : POST => /user/save-event
-export const saveEvent =  async (req: Request, res: Response) => {
+export const saveEvent = async (req: Request, res: Response) => {
   const { eventId } = req.body;
   const userId = req.user?.userId;
   if (!userId) {
-    return res
-      .status(404)
-      .json({ status: "error", message: "Please login." });
+    return res.status(404).json({ status: "error", message: "Please login." });
   }
   const userObjectId = new mongoose.Types.ObjectId(userId);
-   try {
-     const existing = await savedRepo.findOne(userId,eventId);
-     if(existing){
-        await savedRepo.findByIdAndDelete(existing._id);
-        return res.status(200).json({ status: 'success', message: 'Event unsaved' });
-     }
-     const saveData = {
-      userId:userObjectId,
-      eventId
-     }
-     const saved = await savedRepo.addToSave(saveData)
-     res.status(200).json({ status: 'success', message: 'Event saved' });
-   } catch (error: any) {
+  try {
+    const existing = await savedRepo.findOne(userId, eventId);
+    if (existing) {
+      await savedRepo.findByIdAndDelete(existing._id);
+      return res
+        .status(200)
+        .json({ status: "success", message: "Event unsaved" });
+    }
+    const saveData = {
+      userId: userObjectId,
+      eventId,
+    };
+    const saved = await savedRepo.addToSave(saveData);
+    res.status(200).json({ status: "success", message: "Event saved" });
+  } catch (error: any) {
     console.log("Error at saveEvent", error.message);
     res.status(500).json({ message: error.message, status: "error" });
-   }
-}
+  }
+};
 
 // event check saved or not : GET => /user/save-event
-export const isSaved =  async (req: Request, res: Response) => {
+export const isSaved = async (req: Request, res: Response) => {
   const { eventId } = req.query;
   const userId = req.user?.userId;
   if (!userId) {
-    return res
-      .status(404)
-      .json({ status: "error", message: "Please login." });
+    return res.status(404).json({ status: "error", message: "Please login." });
   }
-   try {
-     const saved = await savedRepo.findOne(userId,eventId);
-     res.status(200).json({ status: 'success', isSaved: !!saved });
-   } catch (error: any) {
+  try {
+    const saved = await savedRepo.findOne(userId, eventId);
+    res.status(200).json({ status: "success", isSaved: !!saved });
+  } catch (error: any) {
     console.log("Error at isSaved", error.message);
     res.status(500).json({ message: error.message, status: "error" });
-   }
-}
+  }
+};
 
 // user saved events :  /user/saved
-export const userSaved =  async (req: Request, res: Response) => {
+export const userSaved = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   if (!userId) {
-    return res
-      .status(404)
-      .json({ status: "error", message: "Please login." });
+    return res.status(404).json({ status: "error", message: "Please login." });
   }
-   try {
-     const saved = await savedRepo.findByUserId(userId);
-     const sortedEvents = saved.sort((a, b) => {
+  try {
+    const saved = await savedRepo.findByUserId(userId);
+    const sortedEvents = saved.sort((a, b) => {
       return Number(b.createdAt) - Number(a.createdAt);
     });
-     res.status(200).json({ status: 'success', saved:sortedEvents });
-   } catch (error: any) {
+    res.status(200).json({ status: "success", saved: sortedEvents });
+  } catch (error: any) {
     console.log("Error at userSaved", error.message);
     res.status(500).json({ message: error.message, status: "error" });
-   }
-}
+  }
+};

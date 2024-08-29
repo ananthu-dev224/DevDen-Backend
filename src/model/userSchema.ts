@@ -49,6 +49,14 @@ const userSchema = new Schema({
     googleId:{
         type:String
     },
+    wallet:{
+        type:Number,
+        default:0
+    },
+    paymentHistory:{
+        type:Array,
+        default:[]
+    },
     createdAt:{
         type:String,
         default:Date.now()
@@ -56,6 +64,7 @@ const userSchema = new Schema({
 })
 
 const userModel =  mongoose.model('user',userSchema);
+
 
 
 export default userModel;

@@ -54,6 +54,16 @@ export class TicketRepository {
     }
   }
 
+  async findByEventIdAbort(eventId:any) {
+    try {
+      const tickets = await ticketModel.find({eventId:eventId,status:'Purchased'}).populate('eventId').populate('userId');
+      return tickets;
+    } catch (error: any) {
+      console.log("DB error at Ticket findByEventIdAbort", error.message);
+      throw new Error(`DB error at Ticket findByEventIdAbort : ${error.message}`);
+    }
+  }
+
   async findByTicketId(ticketId:any) {
     try {
       const tickets = await ticketModel.findOne({ticketId:ticketId}).populate({

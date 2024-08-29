@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { TicketRepository } from "../repository/ticketRepository";
 import { EventRepository } from "../repository/eventRepository";
+import { UserRepository } from "../repository/userRepository";
 import { generateUniqueTicketId } from "../utils/generateTicketId";
 import Stripe from "stripe";
 import mongoose from "mongoose";
@@ -18,6 +19,7 @@ const stripe = new Stripe(stripeSecret);
 
 const ticketRepo = new TicketRepository();
 const eventRepo = new EventRepository();
+const userRepo = new UserRepository();
 
 // checkout session of stripe : /user/checkout-session
 export const checkoutSession = async (req: Request, res: Response) => {
@@ -128,6 +130,23 @@ export const buyTicket = async (req: Request, res: Response) => {
           message: "Event not available. ",
         });
       }
+     
+      const hostId = event?.hostId;
+      const host = await userRepo.findById(hostId);
+      if (!host) {
+        return res.status(400).json({
+          status: "error",
+          message: "Event host not found.",
+        });
+      }
+  
+      // Deduct 1% commission and calculate total earnings for host
+      const commissionRate = 0.05; // 1% commission
+      const purchaseCommision = totalCost * commissionRate;
+      const hostEarnings = totalCost - purchaseCommision;
+  
+      // Update host's payment history
+      const paymentHistoryEntry = `Earned $${+hostEarnings} from event (ID: ${eventId}) on ${new Date().toLocaleDateString()}`;
 
       const ticketsLeft = (event?.totalTickets ?? 0) - quantity;
 
@@ -153,6 +172,13 @@ export const buyTicket = async (req: Request, res: Response) => {
         eventRepo.findOneAndUpdate(
           { _id: eventId },
           { totalTickets: ticketsLeft }
+        ),
+        userRepo.findOneAndUpdate(
+          { _id: hostId },
+          {
+            $inc: { wallet: hostEarnings },
+            $push: { paymentHistory: paymentHistoryEntry },
+          }
         ),
       ]);
       return res
@@ -217,6 +243,15 @@ export const cancelTicket = async (req: Request, res: Response) => {
         .status(400)
         .json({ status: "error", message: "Event doesnt exist" });
     }
+    const hostId = event.hostId;
+    const host = await userRepo.findById(hostId)
+    if (!host) {
+      return res.status(400).json({
+        status: "error",
+        message: "Event host not found.",
+      });
+    }
+
     const eventDate = new Date(event.date);
     // Format event date to YYYY-MM-DD
     const eventDateString = eventDate.toISOString().split("T")[0];
@@ -251,6 +286,15 @@ export const cancelTicket = async (req: Request, res: Response) => {
     });
 
     if(refund.status === 'succeeded'){
+      const commissionRate = 0.05; // 5% commission
+      const totalCost = ticket.totalCost;
+
+      // Calculate the commission and debit amount
+      const commissionAmount = totalCost * commissionRate;
+      const debitAmount = totalCost - commissionAmount;
+      // Update host's payment history
+      const paymentHistoryEntry = `Debit $${-debitAmount} from your wallet for cancellation of ticket: ${ticketId} on ${new Date().toLocaleDateString()}`;
+
       await Promise.all([
         ticketRepo.findOneAndUpdate(
           { ticketId },
@@ -259,11 +303,18 @@ export const cancelTicket = async (req: Request, res: Response) => {
         eventRepo.findOneAndUpdate(
           { _id: ticket.eventId },
           { $inc: { totalTickets: ticket.numberOfTickets } }
+        ),
+        userRepo.findOneAndUpdate(
+          {_id : hostId},
+          {
+            $inc: { wallet: -debitAmount },
+            $push: { paymentHistory: paymentHistoryEntry },
+          }
         )
       ]);
     }
 
-    res.status(200).json({ status: 'success', message: 'Ticket canceled and refunded' });
+    res.status(200).json({ status: 'success', message: 'Ticket canceled and refunded to your Stripe account' });
   } catch (error: any) {
     console.log("Error at cancelTicket", error.message);
     res.status(500).json({ message: error.message, status: "error" });
