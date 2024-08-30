@@ -42,6 +42,7 @@ import {
 } from "../controller/networkController";
 import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF, verifyStatus } from "../controller/ticketController";
 import {addOrGetConversation,addMessage,getConversation,getConversationUser,getMessages,deleteMessage} from '../controller/chatController'
+import { withdraw } from "../controller/notificationController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
 const router = express.Router();
@@ -110,6 +111,10 @@ router.delete(
   authorizeRole("user"),
   deleteMessage
 );
+router.post("/withdraw",verifyToken, authorizeRole("user"), withdraw);
+
+
+
 
 
 

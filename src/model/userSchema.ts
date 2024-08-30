@@ -49,6 +49,9 @@ const userSchema = new Schema({
     googleId:{
         type:String
     },
+    stripeAccountId:{
+        type:String
+    },
     wallet:{
         type:Number,
         default:0
