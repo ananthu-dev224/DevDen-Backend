@@ -36,8 +36,14 @@ const socketConfig = (io: any) => {
     // Handle leaving a conversation room
     socket.on("leaveConversation", async (data:{conversationId: string, userId: any}) => {
       const { userId, conversationId } = data;
-      console.log(`User ${socket.id} and Id ${userId} left conversation ${conversationId}`);
       socket.leave(conversationId);
+      if(userId){
+        await userRepo.findOneAndUpdate(
+          { _id: userId },
+          { chatStatus : 'Offline', lastSeen: new Date() }
+        );
+      }
+      console.log(`User ${socket.id} and Id ${userId} left conversation ${conversationId}`);
     });
 
     // Handle disconnection

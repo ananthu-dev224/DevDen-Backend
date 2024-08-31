@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { ChatRepository } from "../repository/chatRepository";
 import { UserRepository } from "../repository/userRepository";
+import { NotificationsRepository } from "../repository/notificationsRepository";
 import mongoose from "mongoose";
 
 
 const chatRepo = new ChatRepository();
 const userRepo = new UserRepository();
+const notiRepo = new NotificationsRepository();
 
 // add or get conversation : POST =>  /user/conversation
 export const addOrGetConversation = async (req: Request, res: Response) => {
@@ -13,11 +15,23 @@ export const addOrGetConversation = async (req: Request, res: Response) => {
     const senderId = req.user?.userId;
     const userIdObjectId = new mongoose.Types.ObjectId(senderId)
     try {
+      const sender = await userRepo.findById(senderId);
+      if(!sender){
+        return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+      }
       const exisitingConversation = await chatRepo.findTwoUserConversation(senderId, recieverId);
       if(exisitingConversation){
         return res.status(200).json({status:'success',conversation:exisitingConversation})
       }
         const conversation = await chatRepo.createConversation({senderId:userIdObjectId,recieverId})
+        const noti = `@${sender.username} started a conversation with you.`;
+        const notification = {
+          userId: recieverId,
+          noti,
+        };
+        await notiRepo.addNotification(notification);
         res.status(200).json({status:'success',conversation})
     } catch (error: any) {
       console.log("Error at addConversation", error.message);
@@ -65,10 +79,12 @@ export const getConversation = async (req: Request, res: Response) => {
 // addMessage : POST =>  /user/message
 export const addMessage = async (req: Request, res: Response) => {
     const { conversationId, text } = req.body;
+    console.log(conversationId, text)
     const sender = req.user?.userId;
     try {
       const newMessage = await chatRepo.addNewMessage(conversationId, sender, text)
-      res.status(200).json({status:'success',newMessage});
+      console.log(newMessage)
+      res.status(200).json({status:'success',message:newMessage});
     } catch (error: any) {
       console.log("Error at addMessage", error.message);
       res.status(500).json({ message: error.message, status: "error" });
@@ -94,6 +110,7 @@ export const getMessages = async (req: Request, res: Response) => {
 export const deleteMessage = async (req: Request, res: Response) => {
   try {
     const messageId = req.params.id;
+    console.log(messageId)
     await chatRepo.findByMessageIdAndDelete(messageId)  
     res.status(200).json({
       status: "success",

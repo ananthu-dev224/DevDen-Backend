@@ -8,11 +8,13 @@ import generateUniqueUsername from "../utils/generateUsername";
 import { OAuth2Client } from "google-auth-library";
 
 import { UserRepository } from "../repository/userRepository";
+import { NotificationsRepository } from "../repository/notificationsRepository";
 
 let resetTokens: any = {};
 let otpSend: string;
 let otpTime: number;
 const userRepo = new UserRepository();
+const notiRepo = new NotificationsRepository();
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const client = new OAuth2Client(clientId);
 // User signup : /user/signup
@@ -225,6 +227,12 @@ export const resetPassword = async (req: Request, res: Response) => {
       { password: hashedPassword }
     );
     delete resetTokens[email];
+    const noti = `Your password changed successfully.`;
+    const notification = {
+      userId: updatedUser?.username,
+      noti,
+    };
+    await notiRepo.addNotification(notification);
     res
       .status(200)
       .json({ message: "Password Updated Successfully", status: "success" });

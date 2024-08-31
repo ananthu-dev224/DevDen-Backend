@@ -56,6 +56,16 @@ export class EventRepository {
     }
   }
 
+  async activeEvents() {
+    try {
+      const events = await eventModel.find({isActive:true})
+      return events;
+    } catch (error: any) {
+      console.log("DB error at Event activeEvents", error.message);
+      throw new Error(`DB error at Event activeEvents : ${error.message}`);
+    }
+  }
+
   async createdEvents(userId:any) {
     try {
       const events = await eventModel.find({ hostId: userId,isActive:true }).populate('hostId');
@@ -65,6 +75,19 @@ export class EventRepository {
       throw new Error(`DB error at Event createdEvents : ${error.message}`);
     }
   }
+
+  async followingEvents(followingIds:any) {
+    try {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      const events = await eventModel.find({ hostId: { $in: followingIds },isActive:true, date: { $gt: today.toISOString() }, isApproved:true }).sort({ createdAt: -1 }).populate('hostId');
+      return events;
+    } catch (error: any) {
+      console.log("DB error at Event followingEvents", error.message);
+      throw new Error(`DB error at Event followingEvents : ${error.message}`);
+    }
+  }
+
 
   async userEvents(userId:any) {
     try {

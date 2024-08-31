@@ -2,6 +2,8 @@ import { EventRepository } from "../repository/eventRepository";
 import { TicketRepository } from "../repository/ticketRepository";
 import { SavedRepository } from "../repository/savedRepository";
 import { UserRepository } from "../repository/userRepository";
+import { NotificationsRepository } from "../repository/notificationsRepository";
+import { NetworkRepository } from "../repository/networkRepository";
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -19,6 +21,8 @@ const eventRepo = new EventRepository();
 const ticketRepo = new TicketRepository();
 const savedRepo = new SavedRepository();
 const userRepo = new UserRepository();
+const notiRepo = new NotificationsRepository();
+const netWorkRepo = new NetworkRepository();
 
 // Add new event : /user/create-event
 export const addEvent = async (req: Request, res: Response) => {
@@ -62,6 +66,12 @@ export const addEvent = async (req: Request, res: Response) => {
       ticketPrice: numericTicketPrice,
     };
     const newEvent = await eventRepo.addEvent(eventData);
+    const noti = `You posted a new Event.`;
+    const notification = {
+      userId: hostId,
+      noti,
+    };
+    await notiRepo.addNotification(notification);
     res.status(200).json({
       message: "Event created successfully",
       status: "success",
@@ -76,7 +86,21 @@ export const addEvent = async (req: Request, res: Response) => {
 // Get all events : /user/events
 export const getEvents = async (req: Request, res: Response) => {
   try {
-    const events = await eventRepo.allEvents();
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Please login." });
+    }
+    const following = await netWorkRepo.getFollowing(userId);
+    let events;
+    if(following.length === 0){
+      events = await eventRepo.allEvents();
+    }else{
+      const followingIds = following.map(user => user._id);
+      events = await eventRepo.followingEvents(followingIds)
+    }
 
     const sortedEvents = events.sort((a, b) => {
       return Number(b.createdAt) - Number(a.createdAt);
@@ -139,13 +163,11 @@ export const abortEvent = async (req: Request, res: Response) => {
     await eventRepo.findOneAndUpdate({ _id }, { isActive: false });
     const ticketsToRefund = await ticketRepo.findByEventIdAbort(_id);
     if (!ticketsToRefund.length) {
-      return res
-        .status(200)
-        .json({
-          status: "success",
-          message:
-            "Event aborted successfully, No tickets found for this event to refund",
-        });
+      return res.status(200).json({
+        status: "success",
+        message:
+          "Event aborted successfully, No tickets found for this event to refund",
+      });
     }
 
     let totalDebitAmount = 0;
@@ -185,15 +207,22 @@ export const abortEvent = async (req: Request, res: Response) => {
           const debitAmount = ticketCost - commissionAmount;
 
           totalDebitAmount += debitAmount;
+          const refundNoti = `Event Aborted by host, Ticket ID ${ticket.ticketId} of cost ${ticket.totalCost} refund to stripe done.`;
+          const notification = {
+            userId: ticket.userId,
+            noti: refundNoti,
+          };
+
           ticketRepo.findOneAndUpdate(
             { ticketId: ticket.ticketId },
             { status: "Aborted" }
-          );
+          ),
+            notiRepo.addNotification(notification);
         }
       })
     );
     // Update host's payment history
-    const paymentHistoryEntry = `Debit $${-totalDebitAmount} from your wallet ${
+    const paymentHistoryEntry = `Debit $${-totalDebitAmount} from your wallet, Event ${
       event._id
     } aborted , ticket refund on ${new Date().toLocaleDateString()}`;
     await userRepo.findOneAndUpdate(
@@ -313,10 +342,16 @@ export const approveEvent = async (req: Request, res: Response) => {
         .json({ status: "error", message: "Event not found" });
     }
 
-    const updatedUser = await eventRepo.findOneAndUpdate(
-      { _id: id },
-      { isApproved: true }
-    );
+    const hostId = event.hostId;
+    const hostNoti = `Your Event(${id}) approved by admin and is live!`;
+    const notification = {
+      userId: hostId,
+      noti: hostNoti,
+    };
+    await Promise.all([
+      eventRepo.findOneAndUpdate({ _id: id }, { isApproved: true }),
+      notiRepo.addNotification(notification),
+    ]);
     res.status(200).json({ status: "success" });
   } catch (error: any) {
     console.log("Error at approveEvent", error.message);
@@ -338,22 +373,41 @@ export const likeEvent = async (req: Request, res: Response) => {
         .json({ status: "error", message: "Please login." });
     }
 
+    const user = await userRepo.findById(userId)
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Please login." });
+    }
+
     if (!event) {
       return res
         .status(404)
         .json({ status: "error", message: "Event not found" });
     }
-
+    const hostId = event.hostId;
+    let hostNoti; 
     let updatedLikes;
     if (event.likes.includes(userIdObjectId)) {
       updatedLikes = event.likes.filter(
         (id: mongoose.Types.ObjectId) => !id.equals(userIdObjectId)
       );
+      hostNoti = `Your Event(${eventId}) unliked by ${user.username}`;
     } else {
       updatedLikes = [...event.likes, userIdObjectId];
+      hostNoti = `Your Event(${eventId}) liked by ${user.username}`;
     }
 
-    await eventRepo.findOneAndUpdate({ _id: eventId }, { likes: updatedLikes });
+    const notification = {
+      userId: hostId,
+      noti: hostNoti,
+    };
+
+    await Promise.all([
+      eventRepo.findOneAndUpdate({ _id: eventId }, { likes: updatedLikes }),
+      notiRepo.addNotification(notification)
+    ])
     res.status(200).json({ status: "success" });
   } catch (error: any) {
     console.log("Error at likeEvent", error.message);

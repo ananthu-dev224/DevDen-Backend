@@ -109,5 +109,51 @@ export class TicketRepository {
     }
   }
 
+  async confirmedTickets() {
+    try {
+      const tickets = await ticketModel.find({status:'Purchased'})
+      return tickets;
+    } catch (error: any) {
+      console.log("DB error at Ticket confirmedTickets", error.message);
+      throw new Error(`DB error at Ticket confirmedTickets : ${error.message}`);
+    }
+  }
+
+  async getDailyCommission () {
+    try {
+      const result = await ticketModel.aggregate([
+        {
+          $match: { status: "Purchased" }
+        },
+        {
+          $project: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$purchaseDate" } },
+            commission: { $multiply: ["$totalCost", 0.05] }
+          }
+        },
+        {
+          $group: {
+            _id: "$date",
+            totalCommission: { $sum: "$commission" }
+          }
+        },
+        {
+          $sort: { "_id": 1 }
+        }
+      ]);
+  
+      // Fill missing days with 0 
+      const dailyData = Array(7).fill(0);
+      result.forEach((item: { _id: string | number | Date; totalCommission: any; }) => {
+        const dayIndex = new Date(item._id).getDay(); 
+        dailyData[dayIndex] = item.totalCommission;
+      });
+  
+      return dailyData;
+    } catch (error: any) {
+      console.log("DB error at Ticket getDailyCommission", error.message);
+      throw new Error(`DB error at Ticket getDailyCommission : ${error.message}`);
+    }
+  }
 
 }

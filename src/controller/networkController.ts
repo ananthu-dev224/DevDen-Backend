@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { UserRepository } from "../repository/userRepository";
+import { NotificationsRepository } from "../repository/notificationsRepository";
 import { NetworkRepository } from "../repository/networkRepository";
 import { EventRepository } from "../repository/eventRepository";
 
 const userRepo = new UserRepository();
 const networkRepo = new NetworkRepository();
 const eventRepo = new EventRepository();
+const notiRepo = new NotificationsRepository();
 
 // search users : /user/search/:query
 export const searchUsers = async (req: Request, res: Response) => {
@@ -48,7 +50,21 @@ export const followUser = async (req: Request, res: Response) => {
         .json({ message: "User ID is required", status: "error" });
     }
 
-    await networkRepo.addNetwork(userId, followerId);
+    const user = await userRepo.findById(userId);
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "User not found", status: "error" });
+    }
+    const noti = `@${user.username} started following you`;
+    const notification = {
+      userId:followerId,
+      noti,
+    };
+    await Promise.all([
+      networkRepo.addNetwork(userId, followerId),
+      notiRepo.addNotification(notification),
+    ])
     res
       .status(200)
       .json({ message: "Followed successfully", status: "success" });
@@ -103,6 +119,7 @@ export const getFollowing = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
+
 
 
 

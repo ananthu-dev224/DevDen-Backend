@@ -3,9 +3,13 @@ import bcrypt from "bcrypt"
 import { createToken } from "../utils/jwt";
 import { AdminRepository } from "../repository/adminRepository";
 import { UserRepository } from "../repository/userRepository";
+import { EventRepository } from "../repository/eventRepository";
+import { TicketRepository } from "../repository/ticketRepository";
 
 const adminRepo = new AdminRepository()
 const userRepo = new UserRepository()
+const eventRepo = new EventRepository()
+const ticketRepo = new TicketRepository()
 
 // Admin login : /admin/login
 export const adminLogin = async (req: Request, res: Response) => {
@@ -49,7 +53,7 @@ export const toggleUser =  async (req: Request, res: Response) => {
       return res.status(404).json({ status: 'error', message: 'User not found' });
     }
   
-    const updatedUser = await userRepo.findOneAndUpdate(
+    await userRepo.findOneAndUpdate(
       { _id: id },
       { isActive: !user.isActive }
     );
@@ -60,5 +64,25 @@ export const toggleUser =  async (req: Request, res: Response) => {
   }
 };
 
-
+// Admin dashboard : /admin/dashboard
+export const dashboardStati =  async (req: Request, res: Response) => {
+  try {
+    // Dashboard top statistics result
+    const users = await userRepo.activeUsers()
+    const totalUsersActive = users.length;
+    const events = await eventRepo.activeEvents();
+    const totalEventsActive = events.length;
+    const confirmedTickets = await ticketRepo.confirmedTickets();
+    const totalCommission = confirmedTickets.reduce((total, ticket) => total + (ticket.totalCost * 0.05), 0);
+    // User Joined Graph Stati
+    const usersJoinedMonthly = await userRepo.getUsersJoinedMonthly(); // Get users joined each month
+    // Commision earned daily Stati graph
+    const dailyCommission = await ticketRepo.getDailyCommission(); // Get daily commissions
+ 
+    res.status(200).json({status:'success',totalUsersActive,totalEventsActive,totalCommission,usersJoinedMonthly,dailyCommission})
+  } catch (error: any) {
+    console.log("Error at userManage", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
 

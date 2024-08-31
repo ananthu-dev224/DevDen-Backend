@@ -12,7 +12,7 @@ export class CommentRepository {
         text:commentData.text 
       });
       const savedComment = await newComment.save();
-      const populatedComment = await commentModel.findById(savedComment._id).populate('userId');
+      const populatedComment = await commentModel.findById(savedComment._id).populate<{ userId: any }>({ path: 'userId' });
       return populatedComment;
     } catch (error: any) {
       console.log("DB error at addComment", error.message);

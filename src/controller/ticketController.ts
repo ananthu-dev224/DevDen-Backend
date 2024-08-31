@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { TicketRepository } from "../repository/ticketRepository";
 import { EventRepository } from "../repository/eventRepository";
+import { NotificationsRepository } from "../repository/notificationsRepository";
 import { UserRepository } from "../repository/userRepository";
 import { generateUniqueTicketId } from "../utils/generateTicketId";
 import Stripe from "stripe";
@@ -19,6 +20,7 @@ const stripe = new Stripe(stripeSecret);
 
 const ticketRepo = new TicketRepository();
 const eventRepo = new EventRepository();
+const notiRepo = new NotificationsRepository();
 const userRepo = new UserRepository();
 
 // checkout session of stripe : /user/checkout-session
@@ -146,6 +148,7 @@ export const buyTicket = async (req: Request, res: Response) => {
       const hostEarnings = totalCost - purchaseCommision;
   
       // Update host's payment history
+      const userPaymentHistory = `Purchased ${quantity} tickets for $ ${totalCost}.`
       const paymentHistoryEntry = `Earned $${+hostEarnings} from event (ID: ${eventId}) on ${new Date().toLocaleDateString()}`;
 
       const ticketsLeft = (event?.totalTickets ?? 0) - quantity;
@@ -178,6 +181,12 @@ export const buyTicket = async (req: Request, res: Response) => {
           {
             $inc: { wallet: hostEarnings },
             $push: { paymentHistory: paymentHistoryEntry },
+          }
+        ),
+        userRepo.findOneAndUpdate(
+          { _id: userId },
+          {
+            $push: { paymentHistory: userPaymentHistory },
           }
         ),
       ]);
@@ -293,6 +302,7 @@ export const cancelTicket = async (req: Request, res: Response) => {
       const commissionAmount = totalCost * commissionRate;
       const debitAmount = totalCost - commissionAmount;
       // Update host's payment history
+      const userPaymentHistory = `Cancelled ticket: ${ticketId} and refunded ${totalCost} to your stripe account.`
       const paymentHistoryEntry = `Debit $${-debitAmount} from your wallet for cancellation of ticket: ${ticketId} on ${new Date().toLocaleDateString()}`;
 
       await Promise.all([
@@ -309,6 +319,12 @@ export const cancelTicket = async (req: Request, res: Response) => {
           {
             $inc: { wallet: -debitAmount },
             $push: { paymentHistory: paymentHistoryEntry },
+          }
+        ),
+        userRepo.findOneAndUpdate(
+          {_id : ticket.userId},
+          {
+            $push: { paymentHistory: userPaymentHistory },
           }
         )
       ]);

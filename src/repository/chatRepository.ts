@@ -75,7 +75,8 @@ export class ChatRepository {
 
       async findByMessageIdAndDelete(messageId: string) {
         try {
-          const message = await chat.findByIdAndDelete(messageId);
+          const objectId = new mongoose.Types.ObjectId(messageId);
+          const message = await chat.findByIdAndDelete(objectId);
           return message;
         } catch (error: any) {
           console.log("DB error at chat findByMessageIdAndDelete", error.message);
