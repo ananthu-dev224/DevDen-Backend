@@ -136,6 +136,24 @@ export const getCreatedEvents = async (req: Request, res: Response) => {
   }
 };
 
+// explore page : /user/all-events
+export const getAllEvents = async (req: Request, res: Response) => {
+  try {
+    const events = await eventRepo.allEvents()
+    const sortedEvents = events.sort((a, b) => {
+      return Number(b.createdAt) - Number(a.createdAt);
+    });
+
+    res.status(200).json({
+      status: "success",
+      events: sortedEvents,
+    });
+  } catch (error: any) {
+    console.log("Error at getAllEvents", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
+
 // Abort Event(toggle to no active) : /user/abort-event/:id
 export const abortEvent = async (req: Request, res: Response) => {
   try {

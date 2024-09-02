@@ -24,7 +24,8 @@ import {
   likeEvent,
   isSaved,
   saveEvent,
-  userSaved
+  userSaved,
+  getAllEvents
 } from "../controller/eventController";
 import {
   addComment,
@@ -67,6 +68,7 @@ router.post("/edit-dp", verifyToken, authorizeRole("user"), updateDp);
 router.post("/edit-banner", verifyToken, authorizeRole("user"), updateBanner);
 router.post("/create-event", verifyToken, authorizeRole("user"), addEvent);
 router.get("/events", verifyToken, authorizeRole("user"), getEvents);
+router.get("/all-events", verifyToken, authorizeRole("user"), getAllEvents);
 router.get("/event/:id", verifyToken, authorizeRole("user"), getCreatedEvents);
 router.post("/edit-event", verifyToken, authorizeRole("user"), editEvent);
 router.get("/abort-event/:id", verifyToken, authorizeRole("user"), abortEvent);
