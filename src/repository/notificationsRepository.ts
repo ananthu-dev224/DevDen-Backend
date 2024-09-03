@@ -26,5 +26,15 @@ export class NotificationsRepository {
         throw new Error(`DB error at notifications findByUserId : ${error.message}`);
       }
     }
+
+    async deleteMany(userId: any) {
+      try {
+        const notifications = await notificationsModel.deleteMany({userId});
+        return notifications;
+      } catch (error: any) {
+        console.log("DB error at notifications deleteMany", error.message);
+        throw new Error(`DB error at notifications deleteMany : ${error.message}`);
+      }
+    }
   
 }

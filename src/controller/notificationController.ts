@@ -147,3 +147,32 @@ export const notifications = async (req: Request, res: Response) => {
   }
 };
 
+// clear user notifications : /user/clear-notifications
+export const clearNotifications = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ message: "User ID is required", status: "error" });
+    }
+    const user = await userRepo.findById(userId);
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "User is required", status: "error" });
+    }
+    // Delete all notifications for the user
+    await notiRepo.deleteMany(userId);
+
+    // Clear the payment history array
+    user.paymentHistory = [];
+    await user.save();
+
+    res.status(200).json({ status: "success", message: "Notifications and payment history cleared." });
+  } catch (error: any) {
+    console.log("Error at clearNotifications", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+};
