@@ -16,6 +16,11 @@ const socketConfig = (io: any) => {
       socket.to(data.conversationId).emit("stopTyping", data.userId);
     });
 
+    socket.on("deleteMessage", async (data: any) => {
+      console.log("Message deleted:", data);
+      io.to(data.conversationId).emit("deleteMessage", data); // Emit the deleted message to the specific conversation's room
+    });
+
     socket.on("sendMessage", async (data: any) => {
       console.log("Message received:", data);
       io.to(data.conversationId).emit("message", data); // Emit the message to the specific conversation's room

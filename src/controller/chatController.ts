@@ -79,11 +79,9 @@ export const getConversation = async (req: Request, res: Response) => {
 // addMessage : POST =>  /user/message
 export const addMessage = async (req: Request, res: Response) => {
     const { conversationId, text } = req.body;
-    console.log(conversationId, text)
     const sender = req.user?.userId;
     try {
       const newMessage = await chatRepo.addNewMessage(conversationId, sender, text)
-      console.log(newMessage)
       res.status(200).json({status:'success',message:newMessage});
     } catch (error: any) {
       console.log("Error at addMessage", error.message);
@@ -110,7 +108,6 @@ export const getMessages = async (req: Request, res: Response) => {
 export const deleteMessage = async (req: Request, res: Response) => {
   try {
     const messageId = req.params.id;
-    console.log(messageId)
     await chatRepo.findByMessageIdAndDelete(messageId)  
     res.status(200).json({
       status: "success",
