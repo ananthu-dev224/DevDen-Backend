@@ -78,10 +78,15 @@ export const getConversation = async (req: Request, res: Response) => {
 
 // addMessage : POST =>  /user/message
 export const addMessage = async (req: Request, res: Response) => {
-    const { conversationId, text } = req.body;
+    const { conversationId, text, replyTo } = req.body;
     const sender = req.user?.userId;
     try {
-      const newMessage = await chatRepo.addNewMessage(conversationId, sender, text)
+      let newMessage;
+      if(replyTo !== null){
+      newMessage = await chatRepo.addNewMessage(conversationId, sender, text, replyTo._id)
+      }else{
+      newMessage = await chatRepo.addNewMessage(conversationId, sender, text, replyTo)
+      }
       res.status(200).json({status:'success',message:newMessage});
     } catch (error: any) {
       console.log("Error at addMessage", error.message);

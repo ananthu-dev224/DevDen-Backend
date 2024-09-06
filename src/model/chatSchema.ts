@@ -11,6 +11,11 @@ const chatSchema = new Schema(
       ref: "user",
       required: true,
     },
+    replyTo: {
+      type: mongoose.Types.ObjectId,
+      ref: "chat", 
+      default: null,
+    },
     text: {
       type: String,
       required: true,
