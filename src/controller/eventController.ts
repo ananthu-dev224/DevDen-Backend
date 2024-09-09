@@ -83,7 +83,7 @@ export const addEvent = async (req: Request, res: Response) => {
   }
 };
 
-// Get all events : /user/events
+// Get all events algorithm : /user/events
 export const getEvents = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -93,8 +93,10 @@ export const getEvents = async (req: Request, res: Response) => {
         .status(404)
         .json({ status: "error", message: "Please login." });
     }
+    const page = parseInt(req.query.page as string, 10) || 1; // Default to page 1
+    const pageSize = 2;
     const following = await netWorkRepo.getFollowing(userId);
-    let events;
+    let events: any[];
     if(following.length === 0){
       events = await eventRepo.allEvents();
     }else{
@@ -102,13 +104,29 @@ export const getEvents = async (req: Request, res: Response) => {
       events = await eventRepo.followingEvents(followingIds)
     }
 
+    if(events.length === 0){
+      events = await eventRepo.allEvents();
+    }
+
     const sortedEvents = events.sort((a, b) => {
       return Number(b.createdAt) - Number(a.createdAt);
     });
 
+    // Paginate events
+    const totalEvents = sortedEvents.length;
+    const startIndex = (page - 1) * pageSize;
+    const paginatedEvents = sortedEvents.slice(startIndex, startIndex + pageSize);
+    console.log(totalEvents,paginatedEvents.length)
+
     res.status(200).json({
       status: "success",
-      events: sortedEvents,
+      events: paginatedEvents,
+      pagination: {
+        page,
+        pageSize,
+        total: totalEvents,
+        totalPages: Math.ceil(totalEvents / pageSize),
+      },
     });
   } catch (error: any) {
     console.log("Error at getEvents", error.message);

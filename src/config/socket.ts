@@ -51,6 +51,30 @@ const socketConfig = (io: any) => {
       console.log(`User ${socket.id} and Id ${userId} left conversation ${conversationId}`);
     });
 
+    socket.on('startCall', (data: any) => {
+      const { conversationId, userId } = data;
+      // Emit the 'incomingCall' event to everyone in the room except the caller
+      socket.to(conversationId).emit('incomingCall', { userId, callConversationId:conversationId });
+      console.log(`Call started in conversation ${conversationId}`);
+    });
+    
+
+    // Handle accepting a call
+    socket.on('acceptCall', (data: any) => {
+      const { conversationId, userId } = data;
+      // Notify all users in the conversation that the call has been accepted
+      io.to(conversationId).emit('callAccepted', { userId });
+      console.log(`Call accepted by user ${userId} in conversation ${conversationId}`);
+    });
+
+    // Handle declining a call
+    socket.on('declineCall', (data: any) => {
+      const { conversationId, userId } = data;
+      // Notify all users in the conversation that the call has been declined
+      io.to(conversationId).emit('callDeclined', { userId });
+      console.log(`Call declined by user ${userId} in conversation ${conversationId}`);
+    });
+
     // Handle disconnection
     socket.on("disconnect", async () => {
       const userId = socket.userId;
