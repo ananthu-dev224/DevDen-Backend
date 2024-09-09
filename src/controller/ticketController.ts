@@ -7,8 +7,8 @@ import { generateUniqueTicketId } from "../utils/generateTicketId";
 import Stripe from "stripe";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import QRCode from 'qrcode';
-import PDFDocument from 'pdfkit';
+import QRCode from "qrcode";
+import PDFDocument from "pdfkit";
 
 dotenv.config();
 
@@ -99,100 +99,99 @@ export const buyTicket = async (req: Request, res: Response) => {
         .status(404)
         .json({ status: "error", message: "Please login." });
     }
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      const { metadata } = session;
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const { metadata } = session;
 
-      // Check if metadata is available
-      if (!metadata) {
-        return res
-          .status(400)
-          .json({ status: "error", message: "Payment error: No metadata." });
-      }
-
-      // Check if the ticket has already been purchased
-      const existingTicket = await ticketRepo.findByStripeId(sessionId);
-      if (existingTicket) {
-        return res.status(400).json({
-          status: "error",
-          message: "Ticket already purchased. Please pay again to get more.",
-        });
-      }
-
-      // Extract event and quantity from metadata
-      const eventId = new mongoose.Types.ObjectId(metadata.eventId);
-      const quantity = parseInt(metadata.quantity, 10);
-      const totalCost = (parseFloat(metadata.amount) / 100) * quantity;
-
-      // Get event details and calculate tickets left
-      const event = await eventRepo.findById(eventId);
-
-      if (!event) {
-        return res.status(400).json({
-          status: "error",
-          message: "Event not available. ",
-        });
-      }
-     
-      const hostId = event?.hostId;
-      const host = await userRepo.findById(hostId);
-      if (!host) {
-        return res.status(400).json({
-          status: "error",
-          message: "Event host not found.",
-        });
-      }
-  
-      // Deduct 1% commission and calculate total earnings for host
-      const commissionRate = 0.05; // 1% commission
-      const purchaseCommision = totalCost * commissionRate;
-      const hostEarnings = totalCost - purchaseCommision;
-  
-      // Update host's payment history
-      const userPaymentHistory = `Purchased ${quantity} tickets for $ ${totalCost}.`
-      const paymentHistoryEntry = `Earned $${+hostEarnings} from event (ID: ${eventId}) on ${new Date().toLocaleDateString()}`;
-
-      const ticketsLeft = (event?.totalTickets ?? 0) - quantity;
-
-
-      const ticketId = await generateUniqueTicketId();
-      const qrCodeData = `${process.env.FRONT_END_URL}/ticket-status/${ticketId}`;
-      const qrCodeUrl = await QRCode.toDataURL(qrCodeData);
-
-      // Prepare ticket data and save to database
-      const ticketData = {
-        eventId,
-        userId: userObjectId,
-        quantity,
-        totalCost,
-        sessionId,
-        method,
-        ticketId,
-        qrCode:qrCodeUrl
-      };
-
-      await Promise.all([
-        ticketRepo.addTicket(ticketData),
-        eventRepo.findOneAndUpdate(
-          { _id: eventId },
-          { totalTickets: ticketsLeft }
-        ),
-        userRepo.findOneAndUpdate(
-          { _id: hostId },
-          {
-            $inc: { wallet: hostEarnings },
-            $push: { paymentHistory: paymentHistoryEntry },
-          }
-        ),
-        userRepo.findOneAndUpdate(
-          { _id: userId },
-          {
-            $push: { paymentHistory: userPaymentHistory },
-          }
-        ),
-      ]);
+    // Check if metadata is available
+    if (!metadata) {
       return res
-        .status(200)
-        .json({ status: "success", message: "Ticket purchased successfully" });
+        .status(400)
+        .json({ status: "error", message: "Payment error: No metadata." });
+    }
+
+    // Check if the ticket has already been purchased
+    const existingTicket = await ticketRepo.findByStripeId(sessionId);
+    if (existingTicket) {
+      return res.status(400).json({
+        status: "error",
+        message: "Ticket already purchased. Please pay again to get more.",
+      });
+    }
+
+    // Extract event and quantity from metadata
+    const eventId = new mongoose.Types.ObjectId(metadata.eventId);
+    const quantity = parseInt(metadata.quantity, 10);
+    const totalCost = (parseFloat(metadata.amount) / 100) * quantity;
+
+    // Get event details and calculate tickets left
+    const event = await eventRepo.findById(eventId);
+
+    if (!event) {
+      return res.status(400).json({
+        status: "error",
+        message: "Event not available. ",
+      });
+    }
+
+    const hostId = event?.hostId;
+    const host = await userRepo.findById(hostId);
+    if (!host) {
+      return res.status(400).json({
+        status: "error",
+        message: "Event host not found.",
+      });
+    }
+
+    // Deduct 1% commission and calculate total earnings for host
+    const commissionRate = 0.05; // 1% commission
+    const purchaseCommision = totalCost * commissionRate;
+    const hostEarnings = totalCost - purchaseCommision;
+
+    // Update host's payment history
+    const userPaymentHistory = `Purchased ${quantity} tickets for $ ${totalCost}.`;
+    const paymentHistoryEntry = `Earned $${+hostEarnings} from event (ID: ${eventId}) on ${new Date().toLocaleDateString()}`;
+
+    const ticketsLeft = (event?.totalTickets ?? 0) - quantity;
+
+    const ticketId = await generateUniqueTicketId();
+    const qrCodeData = `${process.env.FRONT_END_URL}/ticket-status/${ticketId}`;
+    const qrCodeUrl = await QRCode.toDataURL(qrCodeData);
+
+    // Prepare ticket data and save to database
+    const ticketData = {
+      eventId,
+      userId: userObjectId,
+      quantity,
+      totalCost,
+      sessionId,
+      method,
+      ticketId,
+      qrCode: qrCodeUrl,
+    };
+
+    await Promise.all([
+      ticketRepo.addTicket(ticketData),
+      eventRepo.findOneAndUpdate(
+        { _id: eventId },
+        { totalTickets: ticketsLeft }
+      ),
+      userRepo.findOneAndUpdate(
+        { _id: hostId },
+        {
+          $inc: { wallet: hostEarnings },
+          $push: { paymentHistory: paymentHistoryEntry },
+        }
+      ),
+      userRepo.findOneAndUpdate(
+        { _id: userId },
+        {
+          $push: { paymentHistory: userPaymentHistory },
+        }
+      ),
+    ]);
+    return res
+      .status(200)
+      .json({ status: "success", message: "Ticket purchased successfully" });
   } catch (error: any) {
     console.log("Error at buyTicket", error.message);
     res.status(500).json({ message: error.message, status: "error" });
@@ -240,11 +239,13 @@ export const eventDetails = async (req: Request, res: Response) => {
 // cancel ticket and refund : /user/cancel-ticket
 export const cancelTicket = async (req: Request, res: Response) => {
   try {
-     const { ticketId } = req.body;
+    const { ticketId } = req.body;
     const ticket = await ticketRepo.findByTicketId(ticketId);
-    
+
     if (!ticket) {
-      return res.status(404).json({ status: 'error', message: 'Invalid Ticket' });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Invalid Ticket" });
     }
     const event = await eventRepo.findById(ticket.eventId);
     if (!event) {
@@ -253,7 +254,7 @@ export const cancelTicket = async (req: Request, res: Response) => {
         .json({ status: "error", message: "Event doesnt exist" });
     }
     const hostId = event.hostId;
-    const host = await userRepo.findById(hostId)
+    const host = await userRepo.findById(hostId);
     if (!host) {
       return res.status(400).json({
         status: "error",
@@ -278,7 +279,9 @@ export const cancelTicket = async (req: Request, res: Response) => {
     const sessionId = ticket.stripe_sessionId;
 
     if (!sessionId) {
-      return res.status(400).json({ status: 'error', message: 'No Stripe session ID found' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "No Stripe session ID found" });
     }
 
     // Retrieve the payment intent associated with the session
@@ -286,7 +289,9 @@ export const cancelTicket = async (req: Request, res: Response) => {
     const paymentIntentId = session.payment_intent as string;
 
     if (!paymentIntentId) {
-      return res.status(400).json({ status: 'error', message: 'No payment intent found' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "No payment intent found" });
     }
 
     // Create a refund for the payment intent
@@ -294,7 +299,7 @@ export const cancelTicket = async (req: Request, res: Response) => {
       payment_intent: paymentIntentId,
     });
 
-    if(refund.status === 'succeeded'){
+    if (refund.status === "succeeded") {
       const commissionRate = 0.05; // 5% commission
       const totalCost = ticket.totalCost;
 
@@ -302,35 +307,37 @@ export const cancelTicket = async (req: Request, res: Response) => {
       const commissionAmount = totalCost * commissionRate;
       const debitAmount = totalCost - commissionAmount;
       // Update host's payment history
-      const userPaymentHistory = `Cancelled ticket: ${ticketId} and refunded ${totalCost} to your stripe account.`
+      const userPaymentHistory = `Cancelled ticket: ${ticketId} and refunded ${totalCost} to your stripe account.`;
       const paymentHistoryEntry = `Debit $${-debitAmount} from your wallet for cancellation of ticket: ${ticketId} on ${new Date().toLocaleDateString()}`;
 
       await Promise.all([
-        ticketRepo.findOneAndUpdate(
-          { ticketId },
-          { status: "Cancelled" }
-        ),
+        ticketRepo.findOneAndUpdate({ ticketId }, { status: "Cancelled" }),
         eventRepo.findOneAndUpdate(
           { _id: ticket.eventId },
           { $inc: { totalTickets: ticket.numberOfTickets } }
         ),
         userRepo.findOneAndUpdate(
-          {_id : hostId},
+          { _id: hostId },
           {
             $inc: { wallet: -debitAmount },
             $push: { paymentHistory: paymentHistoryEntry },
           }
         ),
         userRepo.findOneAndUpdate(
-          {_id : ticket.userId},
+          { _id: ticket.userId },
           {
             $push: { paymentHistory: userPaymentHistory },
           }
-        )
+        ),
       ]);
     }
 
-    res.status(200).json({ status: 'success', message: 'Ticket canceled and refunded to your Stripe account' });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "Ticket canceled and refunded to your Stripe account",
+      });
   } catch (error: any) {
     console.log("Error at cancelTicket", error.message);
     res.status(500).json({ message: error.message, status: "error" });
@@ -341,26 +348,29 @@ export const cancelTicket = async (req: Request, res: Response) => {
 export const downloadTicketPDF = async (req: Request, res: Response) => {
   const ticketId = req.params.id;
   try {
-    const ticket:any = await ticketRepo.findByTicketId(ticketId);
+    const ticket: any = await ticketRepo.findByTicketId(ticketId);
     if (!ticket) {
-      return res.status(404).json({ status: "error", message: "Ticket not found." });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Ticket not found." });
     }
 
     // Create a PDF document
     const doc = new PDFDocument();
 
-
     // Set PDF headers
-    res.setHeader('Content-disposition', `attachment; filename=DevDen Ticket-${ticket.ticketId}.pdf`);
-    res.setHeader('Content-type', 'application/pdf');
+    res.setHeader(
+      "Content-disposition",
+      `attachment; filename=DevDen Ticket-${ticket.ticketId}.pdf`
+    );
+    res.setHeader("Content-type", "application/pdf");
 
     // Pipe PDF document to response
     doc.pipe(res);
 
     // Add Title
-    doc.fontSize(20).text('Event Ticket', { align: 'center' });
+    doc.fontSize(20).text("Event Ticket", { align: "center" });
     doc.moveDown();
-
 
     // Define dimensions
     const pageWidth = doc.page.width;
@@ -369,14 +379,13 @@ export const downloadTicketPDF = async (req: Request, res: Response) => {
 
     // Define the X position for QR code
     const qrCodeX = pageWidth - qrCodeSize - padding;
-    
+
     // Define Y positions for details and QR code
     let detailsY = 100;
-  
 
     // Add Ticket Details
     doc.fontSize(12);
-    
+
     const details = [
       `Ticket ID: ${ticket.ticketId}`,
       `Admit: ${ticket.numberOfTickets}`,
@@ -385,7 +394,7 @@ export const downloadTicketPDF = async (req: Request, res: Response) => {
       `Event Venue: ${ticket.eventId.venue}`,
       `Event Date: ${ticket.eventId.date}`,
       `Event Time: ${ticket.eventId.time}`,
-      `Status: ${ticket.status}`
+      `Status: ${ticket.status}`,
     ];
 
     // Calculate maximum width for text and add ticket details
@@ -399,15 +408,15 @@ export const downloadTicketPDF = async (req: Request, res: Response) => {
       doc.image(ticket.qrCode, qrCodeX, 100, { fit: [qrCodeSize, qrCodeSize] });
     }
 
-
     // Finalize PDF and send
     doc.end();
-
   } catch (error) {
     console.error("Error generating PDF:", error);
-    res.status(500).json({ status: "error", message: "Internal Server Error." });
+    res
+      .status(500)
+      .json({ status: "error", message: "Internal Server Error." });
   }
-}
+};
 
 // verify ticket status : /user/verify-qr/:id
 export const verifyStatus = async (req: Request, res: Response) => {
@@ -420,10 +429,14 @@ export const verifyStatus = async (req: Request, res: Response) => {
     }
     const ticket = await ticketRepo.findByTicketId(ticketId);
 
-    if(ticket?.status === 'Purchased'){
-        return res.status(200).json({ status: "success", message : "Ticket is Active." });
-    }else{
-        return res.status(400).json({ status: "error", message : "Ticket is not Active." });
+    if (ticket?.status === "Purchased") {
+      return res
+        .status(200)
+        .json({ status: "success", message: "Ticket is Active." });
+    } else {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Ticket is not Active." });
     }
   } catch (error: any) {
     console.log("Error at verifyStatus", error.message);

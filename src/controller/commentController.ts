@@ -95,7 +95,7 @@ export const likeComment = async (req: Request, res: Response) => {
     const comment = await commentRepo.findById(commentId);
     const userId = req.user?.userId;
     const userIdObjectId = new mongoose.Types.ObjectId(userId);
-    const user = await userRepo.findById(userId)
+    const user = await userRepo.findById(userId);
 
     if (!userId) {
       return res

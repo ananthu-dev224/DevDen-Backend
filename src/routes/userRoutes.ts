@@ -25,7 +25,7 @@ import {
   isSaved,
   saveEvent,
   userSaved,
-  getAllEvents
+  getAllEvents,
 } from "../controller/eventController";
 import {
   addComment,
@@ -41,9 +41,28 @@ import {
   getFollowers,
   getFollowing,
 } from "../controller/networkController";
-import { checkoutSession, buyTicket, userTickets, eventDetails, cancelTicket, downloadTicketPDF, verifyStatus } from "../controller/ticketController";
-import {addOrGetConversation,addMessage,getConversation,getConversationUser,getMessages,deleteMessage} from '../controller/chatController'
-import { withdraw, notifications, clearNotifications } from "../controller/notificationController";
+import {
+  checkoutSession,
+  buyTicket,
+  userTickets,
+  eventDetails,
+  cancelTicket,
+  downloadTicketPDF,
+  verifyStatus,
+} from "../controller/ticketController";
+import {
+  addOrGetConversation,
+  addMessage,
+  getConversation,
+  getConversationUser,
+  getMessages,
+  deleteMessage,
+} from "../controller/chatController";
+import {
+  withdraw,
+  notifications,
+  clearNotifications,
+} from "../controller/notificationController";
 import { reportComment, reportEvent } from "../controller/reportController";
 import { verifyToken, authorizeRole } from "../middleware/userAuth";
 
@@ -93,37 +112,76 @@ router.post("/follow", verifyToken, authorizeRole("user"), followUser);
 router.post("/unfollow", verifyToken, authorizeRole("user"), unfollowUser);
 router.get("/followers/:id", verifyToken, authorizeRole("user"), getFollowers);
 router.get("/following/:id", verifyToken, authorizeRole("user"), getFollowing);
-router.post("/checkout-session",verifyToken, authorizeRole("user"), checkoutSession);
-router.post("/ticket",verifyToken, authorizeRole("user"), buyTicket);
-router.get('/my-tickets',verifyToken, authorizeRole("user"), userTickets);
-router.get("/event-details/:id", verifyToken, authorizeRole("user"), eventDetails);
-router.post("/cancel-ticket",verifyToken, authorizeRole("user"), cancelTicket);
-router.get("/download-ticket/:id", verifyToken, authorizeRole("user"), downloadTicketPDF);
+router.post(
+  "/checkout-session",
+  verifyToken,
+  authorizeRole("user"),
+  checkoutSession
+);
+router.post("/ticket", verifyToken, authorizeRole("user"), buyTicket);
+router.get("/my-tickets", verifyToken, authorizeRole("user"), userTickets);
+router.get(
+  "/event-details/:id",
+  verifyToken,
+  authorizeRole("user"),
+  eventDetails
+);
+router.post("/cancel-ticket", verifyToken, authorizeRole("user"), cancelTicket);
+router.get(
+  "/download-ticket/:id",
+  verifyToken,
+  authorizeRole("user"),
+  downloadTicketPDF
+);
 router.get("/verify-qr/:id", verifyToken, authorizeRole("user"), verifyStatus);
-router.post("/save-event",verifyToken, authorizeRole("user"), saveEvent);
-router.get("/save-event",verifyToken, authorizeRole("user"), isSaved);
-router.get("/saved",verifyToken, authorizeRole("user"), userSaved);
-router.post("/conversation",verifyToken, authorizeRole("user"), addOrGetConversation);
-router.get("/conversation",verifyToken, authorizeRole("user"), getConversation); //by conversation id
-router.get("/conversation/:userId",verifyToken, authorizeRole("user"), getConversationUser); //by userId all conversations
-router.post("/message",verifyToken, authorizeRole("user"), addMessage);
-router.get("/message/:conversationId",verifyToken, authorizeRole("user"), getMessages); //all messages of a conversation
+router.post("/save-event", verifyToken, authorizeRole("user"), saveEvent);
+router.get("/save-event", verifyToken, authorizeRole("user"), isSaved);
+router.get("/saved", verifyToken, authorizeRole("user"), userSaved);
+router.post(
+  "/conversation",
+  verifyToken,
+  authorizeRole("user"),
+  addOrGetConversation
+);
+router.get(
+  "/conversation",
+  verifyToken,
+  authorizeRole("user"),
+  getConversation
+); //by conversation id
+router.get(
+  "/conversation/:userId",
+  verifyToken,
+  authorizeRole("user"),
+  getConversationUser
+); //by userId all conversations
+router.post("/message", verifyToken, authorizeRole("user"), addMessage);
+router.get(
+  "/message/:conversationId",
+  verifyToken,
+  authorizeRole("user"),
+  getMessages
+); //all messages of a conversation
 router.delete(
   "/delete-message/:id",
   verifyToken,
   authorizeRole("user"),
   deleteMessage
 );
-router.post("/withdraw",verifyToken, authorizeRole("user"), withdraw);
-router.get("/notifications",verifyToken, authorizeRole("user"), notifications);
-router.get("/clear-notifications",verifyToken, authorizeRole("user"), clearNotifications);
-router.post("/report-event",verifyToken, authorizeRole("user"), reportEvent);
-router.post("/report-comment",verifyToken, authorizeRole("user"), reportComment);
-
-
-
-
-
-
+router.post("/withdraw", verifyToken, authorizeRole("user"), withdraw);
+router.get("/notifications", verifyToken, authorizeRole("user"), notifications);
+router.get(
+  "/clear-notifications",
+  verifyToken,
+  authorizeRole("user"),
+  clearNotifications
+);
+router.post("/report-event", verifyToken, authorizeRole("user"), reportEvent);
+router.post(
+  "/report-comment",
+  verifyToken,
+  authorizeRole("user"),
+  reportComment
+);
 
 export default router;

@@ -170,7 +170,12 @@ export const clearNotifications = async (req: Request, res: Response) => {
     user.paymentHistory = [];
     await user.save();
 
-    res.status(200).json({ status: "success", message: "Notifications and payment history cleared." });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "Notifications and payment history cleared.",
+      });
   } catch (error: any) {
     console.log("Error at clearNotifications", error.message);
     res.status(500).json({ message: error.message, status: "error" });

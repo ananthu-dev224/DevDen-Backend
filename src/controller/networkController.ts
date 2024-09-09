@@ -58,13 +58,13 @@ export const followUser = async (req: Request, res: Response) => {
     }
     const noti = `@${user.username} started following you`;
     const notification = {
-      userId:followerId,
+      userId: followerId,
       noti,
     };
     await Promise.all([
       networkRepo.addNetwork(userId, followerId),
       notiRepo.addNotification(notification),
-    ])
+    ]);
     res
       .status(200)
       .json({ message: "Followed successfully", status: "success" });
@@ -119,8 +119,3 @@ export const getFollowing = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
-
-
-
-
-

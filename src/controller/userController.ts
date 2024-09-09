@@ -124,11 +124,14 @@ export const userLogin = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "User doesnt exist, Please Signup", status: "error" });
     }
-    
-    if(!user.isActive){
+
+    if (!user.isActive) {
       return res
-      .status(400)
-      .json({ message: "Your access has been restricted by the admin.", status: "error" });
+        .status(400)
+        .json({
+          message: "Your access has been restricted by the admin.",
+          status: "error",
+        });
     }
     const dbpassword = user.password as string;
     const comparePass = await bcrypt.compare(password, dbpassword);
@@ -158,10 +161,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
         .json({ message: "Email is not registered.", status: "error" });
     }
 
-    if(user.googleId){
+    if (user.googleId) {
       return res
         .status(400)
-        .json({ message: "Email is google registered, please sign in using google", status: "error" });
+        .json({
+          message: "Email is google registered, please sign in using google",
+          status: "error",
+        });
     }
     const resetToken = crypto.randomBytes(20).toString("hex");
     resetTokens[email] = {
@@ -262,46 +268,46 @@ export const googleAuth = async (req: Request, res: Response) => {
     }
     const user = await userRepo.findByEmail(email);
     if (user) {
-      if (!user.googleId) { // if already sign up using normal method
-        return res
-          .status(400)
-          .json({
-            message: "This email is already registered with normal signup.",
-          });
-      } else if(!user.isActive){ // if restricted
-        return res
-        .status(400)
-        .json({
+      if (!user.googleId) {
+        // if already sign up using normal method
+        return res.status(400).json({
+          message: "This email is already registered with normal signup.",
+        });
+      } else if (!user.isActive) {
+        // if restricted
+        return res.status(400).json({
           message: "Your access has been restricted by the admin.",
         });
-      }else {  // else user already sign up with oauth
+      } else {
+        // else user already sign up with oauth
         const token = createToken(user._id, "user");
         return res
-        .status(200)
-        .json({ message: "Login Success", status: "success", token, user });
+          .status(200)
+          .json({ message: "Login Success", status: "success", token, user });
       }
-    } else {  // new fresh sign up
-      const baseUsername = email.split('@')[0];
-      const username = await generateUniqueUsername(baseUsername)
+    } else {
+      // new fresh sign up
+      const baseUsername = email.split("@")[0];
+      const username = await generateUniqueUsername(baseUsername);
       const userData = {
         email,
         name,
         username,
-        googleId
+        googleId,
       };
       const newUser = await userRepo.addUser(userData);
       const token = createToken(newUser._id, "user");
       return res
         .status(200)
-        .json({ message: "Login Success", status: "success", token, user:newUser });
+        .json({
+          message: "Login Success",
+          status: "success",
+          token,
+          user: newUser,
+        });
     }
   } catch (error: any) {
     console.log("Error at googleAuth", error.message);
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
-
-
-
-
-

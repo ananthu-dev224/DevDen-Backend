@@ -97,14 +97,14 @@ export const getEvents = async (req: Request, res: Response) => {
     const pageSize = 2;
     const following = await netWorkRepo.getFollowing(userId);
     let events: any[];
-    if(following.length === 0){
+    if (following.length === 0) {
       events = await eventRepo.allEvents();
-    }else{
-      const followingIds = following.map(user => user._id);
-      events = await eventRepo.followingEvents(followingIds)
+    } else {
+      const followingIds = following.map((user) => user._id);
+      events = await eventRepo.followingEvents(followingIds);
     }
 
-    if(events.length === 0){
+    if (events.length === 0) {
       events = await eventRepo.allEvents();
     }
 
@@ -115,8 +115,10 @@ export const getEvents = async (req: Request, res: Response) => {
     // Paginate events
     const totalEvents = sortedEvents.length;
     const startIndex = (page - 1) * pageSize;
-    const paginatedEvents = sortedEvents.slice(startIndex, startIndex + pageSize);
-    console.log(totalEvents,paginatedEvents.length)
+    const paginatedEvents = sortedEvents.slice(
+      startIndex,
+      startIndex + pageSize
+    );
 
     res.status(200).json({
       status: "success",
@@ -157,7 +159,7 @@ export const getCreatedEvents = async (req: Request, res: Response) => {
 // explore page : /user/all-events
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
-    const events = await eventRepo.allEvents()
+    const events = await eventRepo.allEvents();
     const sortedEvents = events.sort((a, b) => {
       return Number(b.createdAt) - Number(a.createdAt);
     });
@@ -243,7 +245,7 @@ export const abortEvent = async (req: Request, res: Response) => {
           const debitAmount = ticketCost - commissionAmount;
 
           totalDebitAmount += debitAmount;
-          const refundNoti = `Event Aborted by host, Ticket ID ${ticket.ticketId} of cost ${ticket.totalCost} refund to stripe done.`;
+          const refundNoti = `Event Aborted by host, Ticket ID ${ticket.ticketId} of cost $${ticket.totalCost} refund to stripe done.`;
           const notification = {
             userId: ticket.userId,
             noti: refundNoti,
@@ -409,7 +411,7 @@ export const likeEvent = async (req: Request, res: Response) => {
         .json({ status: "error", message: "Please login." });
     }
 
-    const user = await userRepo.findById(userId)
+    const user = await userRepo.findById(userId);
 
     if (!user) {
       return res
@@ -423,7 +425,7 @@ export const likeEvent = async (req: Request, res: Response) => {
         .json({ status: "error", message: "Event not found" });
     }
     const hostId = event.hostId;
-    let hostNoti; 
+    let hostNoti;
     let updatedLikes;
     if (event.likes.includes(userIdObjectId)) {
       updatedLikes = event.likes.filter(
@@ -442,8 +444,8 @@ export const likeEvent = async (req: Request, res: Response) => {
 
     await Promise.all([
       eventRepo.findOneAndUpdate({ _id: eventId }, { likes: updatedLikes }),
-      notiRepo.addNotification(notification)
-    ])
+      notiRepo.addNotification(notification),
+    ]);
     res.status(200).json({ status: "success" });
   } catch (error: any) {
     console.log("Error at likeEvent", error.message);
