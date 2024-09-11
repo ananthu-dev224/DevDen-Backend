@@ -96,7 +96,7 @@ export const getConversation = async (req: Request, res: Response) => {
 
 // addMessage : POST =>  /user/message
 export const addMessage = async (req: Request, res: Response) => {
-  const { conversationId, text, replyTo } = req.body;
+  const { conversationId, text, replyTo, content } = req.body;
   const sender = req.user?.userId;
   try {
     let newMessage;
@@ -105,14 +105,16 @@ export const addMessage = async (req: Request, res: Response) => {
         conversationId,
         sender,
         text,
-        replyTo._id
+        replyTo._id,
+        content || "word"
       );
     } else {
       newMessage = await chatRepo.addNewMessage(
         conversationId,
         sender,
         text,
-        replyTo
+        replyTo,
+        content || "word"
       );
     }
     res.status(200).json({ status: "success", message: newMessage });

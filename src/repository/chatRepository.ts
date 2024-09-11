@@ -60,7 +60,8 @@ export class ChatRepository {
     conversationId: string,
     sender: any,
     text: string,
-    replyTo: any
+    replyTo: any,
+    content: any
   ) {
     try {
       const newMessage = new chat({
@@ -68,6 +69,8 @@ export class ChatRepository {
         senderId: sender,
         text,
         replyTo,
+        content,
+        readBy:[sender]
       });
       await conversation.findByIdAndUpdate(
         conversationId,
@@ -84,6 +87,20 @@ export class ChatRepository {
       throw new Error(`DB error at addNewMessage : ${error.message}`);
     }
   }
+  
+  async updateReadChats(conversationId: string,userId:any) {
+    try {
+      const messages = await chat.updateMany(
+        { conversationId, readBy: { $ne: userId } },
+        { $push: { readBy: userId } }
+      );
+      return messages;
+    } catch (error: any) {
+      console.log("DB error at updateReadChats", error.message);
+      throw new Error(`DB error at updateReadChats : ${error.message}`);
+    }
+  }
+
 
   async fetchMessages(conversationId: string) {
     try {

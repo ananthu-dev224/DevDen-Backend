@@ -13,12 +13,20 @@ const chatSchema = new Schema(
     },
     replyTo: {
       type: mongoose.Types.ObjectId,
-      ref: "chat", 
+      ref: "chat",
       default: null,
     },
     text: {
-      type: String,
+      type: String, //chat text-urls
       required: true,
+    },
+    content: {
+      type: String,
+      default: "word", //word-image-video-audio
+    },
+    readBy: {
+      type: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+      default: [],
     },
   },
   { timestamps: true }
