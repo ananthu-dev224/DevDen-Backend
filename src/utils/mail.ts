@@ -70,7 +70,7 @@ export const sendResetMail = async (
   </div>
   <p style="font-size:1.1em; color:black">Password Reset Link :</p>
   <p>Please click on the following link, or paste this into your browser to complete the process: <br/>
-    http://localhost:5173/reset-password/${resetToken} <br/>
+    https://devden.ananthuks.online/reset-password/${resetToken} <br/>
     If you did not request this, please ignore this email and your password will remain unchanged.\n</p>
   <p style="font-size:0.9em;">Regards,<br />DevDen Team</p>
   <hr style="border:none;border-top:1px solid #eee" />
