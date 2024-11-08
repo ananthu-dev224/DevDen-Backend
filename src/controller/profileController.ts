@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { UserRepository } from "../repository/userRepository";
+import { EventRepository } from "../repository/eventRepository";
 
 const userRepo = new UserRepository();
+const eventRepo = new EventRepository();
 
 // Edit profile : /user/edit-profile
 export const editProfile = async (req: Request, res: Response) => {
@@ -47,3 +49,15 @@ export const editProfile = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 };
+
+export const getTopHosts = async (req: Request, res: Response) => {
+  try {
+    const data = await eventRepo.topHosts();
+     return res
+        .status(200)
+        .json({ data , status: "success" });
+  } catch (error:any) {
+    console.log("Error at getTopHosts", error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+}

@@ -59,7 +59,7 @@ connectDb()
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "https://devden.ananthuks.online" },
+  cors: { origin: process.env.FRONT_END_URL},
 });
 
 socketConfig(io)

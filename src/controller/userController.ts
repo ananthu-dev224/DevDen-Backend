@@ -235,7 +235,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     delete resetTokens[email];
     const noti = `Your password changed successfully.`;
     const notification = {
-      userId: updatedUser?.username,
+      userId: updatedUser?._id,
       noti,
     };
     await notiRepo.addNotification(notification);
